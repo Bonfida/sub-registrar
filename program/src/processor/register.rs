@@ -2,7 +2,7 @@
 
 use crate::{
     error::SubRegisterError,
-    state::{registry::Registry, Tag},
+    state::{registry::Registry, Tag, ROOT_DOMAIN_ACCOUNT},
     utils,
 };
 
@@ -110,17 +110,25 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         };
 
         // Check keys
-        check_account_key(accounts.spl_token_program, &spl_token::ID)?;
         check_account_key(accounts.system_program, &system_program::ID)?;
+        check_account_key(accounts.spl_token_program, &spl_token::ID)?;
         check_account_key(accounts.spl_name_service, &spl_name_service::ID)?;
         check_account_key(accounts.rent_sysvar, &sysvar::rent::id())?;
         check_account_key(accounts.name_auctioning_program, &NAME_AUCTIONING)?;
+        check_account_key(accounts.root_domain, &ROOT_DOMAIN_ACCOUNT)?;
 
         // Check owners
+        check_account_owner(accounts.reverse_lookup_class, &system_program::ID).or_else(|_| {
+            check_account_owner(accounts.reverse_lookup_class, &spl_name_service::ID)
+        })?;
+        check_account_owner(accounts.fee_account, &spl_token::ID)?;
         check_account_owner(accounts.fee_source, &spl_token::ID)?;
         check_account_owner(accounts.registry, program_id)?;
         check_account_owner(accounts.parent_domain_account, &spl_name_service::ID)?;
         check_account_owner(accounts.sub_domain_account, &system_program::ID)?;
+        check_account_owner(accounts.sub_reverse_account, &system_program::ID).or_else(|_| {
+            check_account_owner(accounts.sub_reverse_account, &spl_name_service::ID)
+        })?;
 
         // Check signer
         check_signer(accounts.fee_payer)?;

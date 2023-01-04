@@ -16,10 +16,11 @@ use {
         entrypoint::ProgramResult,
         program::invoke,
         program_error::ProgramError,
+        program_pack::Pack,
         pubkey::Pubkey,
         system_program,
     },
-    spl_name_service::instruction::delete,
+    spl_name_service::{instruction::delete, state::NameRecordHeader},
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -76,6 +77,12 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut registry = Registry::from_account_info(accounts.registry, Tag::Registry)?;
+
+    // Check
+    let record = NameRecordHeader::unpack_from_slice(&accounts.sub_domain_account.data.borrow())?;
+    if record.parent_name != registry.domain_account {
+        return Err(SubRegisterError::InvalidSubdomain.into());
+    }
 
     // Delete sub but keep the reverse
     let ix = delete(

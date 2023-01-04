@@ -127,6 +127,27 @@ async fn test_errors() {
         },
     );
 
+    // Domain owned by Bob
+    let fake_subdomain_key = Keypair::new().pubkey();
+    println!("[+] Fake subdomain name key {}", fake_name_key);
+
+    let fake_domain_data = spl_name_service::state::NameRecordHeader {
+        parent_name: Pubkey::new_unique(),
+        owner: bob.pubkey(),
+        class: Pubkey::default(),
+    }
+    .try_to_vec()
+    .unwrap();
+    program_test.add_account(
+        fake_subdomain_key,
+        Account {
+            lamports: 1_000_000,
+            data: fake_domain_data,
+            owner: spl_name_service::id(),
+            ..Account::default()
+        },
+    );
+
     //
     // Create mint
     //
@@ -268,7 +289,7 @@ async fn test_errors() {
     // - Register with not enough funds
     // - Close + Register in same transaction
     // - Invalid sub
-    //
+    // - Unregister invalid sub
     ////////////////////////////////
 
     // Test: Non .sol domain for registry
@@ -528,6 +549,24 @@ async fn test_errors() {
                 fee_payer: &bob.pubkey(),
             },
             register::Params { domain: sub_domain },
+        )],
+        vec![&bob],
+    )
+    .await;
+    assert!(result.is_err());
+
+    // Test: Unregister invalid sub
+    let result = sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![unregister(
+            unregister::Accounts {
+                system_program: &system_program::ID,
+                spl_name_service: &spl_name_service::ID,
+                registry: &registry_key,
+                sub_domain_account: &fake_subdomain_key,
+                domain_owner: &bob.pubkey(),
+            },
+            unregister::Params {},
         )],
         vec![&bob],
     )
