@@ -3,7 +3,7 @@ use {
     borsh::{BorshDeserialize, BorshSerialize},
 };
 
-#[derive(BorshDeserialize, BorshSerialize, Clone, Copy, BorshSize)]
+#[derive(BorshDeserialize, BorshSerialize, Clone, Copy, BorshSize, PartialEq, Eq, Debug)]
 pub struct Price {
     pub length: u64,
     pub price: u64,

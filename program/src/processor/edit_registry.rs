@@ -80,8 +80,6 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
 
     check_account_key(accounts.authority, &registry.authority)?;
 
-    // FIXME: account size issues with different length in price schedule
-
     if let Some(new_authority) = params.new_authority {
         registry.authority = new_authority;
     }
@@ -94,7 +92,8 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         registry.fee_account = new_fee_account;
     }
 
-    if let Some(new_price_schedule) = params.new_price_schedule {
+    if let Some(mut new_price_schedule) = params.new_price_schedule {
+        new_price_schedule.sort_by_key(|x| x.length);
         registry.price_schedule = new_price_schedule;
     }
 

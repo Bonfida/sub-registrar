@@ -90,7 +90,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
+pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], mut params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let (registry_key, nonce) = Registry::find_key(
         accounts.domain_name_account.key,
@@ -106,6 +106,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         msg!("Only .sol are accepted");
         return Err(SubRegisterError::WrongNameAccount.into());
     }
+    params.price_schedule.sort_by_key(|x| x.length);
 
     // Create Registry account
     let seeds: &[&[u8]] = &[

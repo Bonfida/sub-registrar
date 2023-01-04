@@ -43,6 +43,7 @@ impl PrintProgramError for SubRegisterError {
             SubRegisterError::WrongNameAccount => msg!("[+] Error: Invalid name account"),
             SubRegisterError::CannotCloseRegistry => msg!("[+] Error: Cannot close registry"),
             SubRegisterError::Overflow => msg!("[+] Error: Numerical overflow"),
+            SubRegisterError::InvalidSubdomain => msg!("[+] Error: Invalid subdomain"),
         }
     }
 }

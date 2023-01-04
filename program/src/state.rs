@@ -9,7 +9,7 @@ pub mod schedule;
 
 pub const ROOT_DOMAIN_ACCOUNT: Pubkey = pubkey!("58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx");
 
-#[derive(BorshSerialize, BorshDeserialize, BorshSize)]
+#[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, Debug, Eq)]
 #[allow(missing_docs)]
 pub enum Tag {
     Uninitialized,

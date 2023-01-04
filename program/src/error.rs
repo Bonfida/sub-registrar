@@ -20,6 +20,8 @@ pub enum SubRegisterError {
     CannotCloseRegistry,
     #[error("Numerical overflow")]
     Overflow,
+    #[error("Invalid subdomain")]
+    InvalidSubdomain,
 }
 
 impl From<SubRegisterError> for ProgramError {

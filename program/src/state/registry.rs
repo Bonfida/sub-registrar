@@ -8,7 +8,7 @@ use {
     solana_program::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey},
 };
 
-#[derive(BorshDeserialize, BorshSerialize, BorshSize)]
+#[derive(BorshDeserialize, BorshSerialize, BorshSize, PartialEq, Debug, Eq)]
 pub struct Registry {
     pub tag: super::Tag,
     pub nonce: u8,

@@ -7,7 +7,8 @@ use {
 };
 
 pub fn get_domain_price(domain: String, schedule: &Schedule) -> u64 {
-    let len = domain.graphemes(true).count() as u64;
+    let ui_domain = domain.strip_prefix('\0').unwrap();
+    let len = ui_domain.graphemes(true).count() as u64;
     for price in schedule {
         if len == price.length {
             return price.price;

@@ -136,6 +136,14 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     check_account_key(accounts.fee_account, &registry.fee_account)?;
     check_account_key(accounts.parent_domain_account, &registry.domain_account)?;
 
+    if !params.domain.starts_with('\0') {
+        return Err(SubRegisterError::InvalidSubdomain.into());
+    }
+
+    if params.domain.trim().to_lowercase() != params.domain {
+        return Err(SubRegisterError::InvalidSubdomain.into());
+    }
+
     // Check sub account derivation
     let hashed_name = hashv(&[(HASH_PREFIX.to_owned() + &params.domain).as_bytes()])
         .as_ref()
