@@ -93,16 +93,16 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let (registry_key, nonce) = Registry::find_key(
-        &accounts.domain_name_account.key,
+        accounts.domain_name_account.key,
         &params.authority,
         program_id,
     );
     check_account_key(accounts.registry, &registry_key)?;
 
     // Checks
-    let registry =
+    let name_header =
         NameRecordHeader::unpack_from_slice(&accounts.domain_name_account.data.borrow())?;
-    if registry.parent_name != ROOT_DOMAIN_ACCOUNT {
+    if name_header.parent_name != ROOT_DOMAIN_ACCOUNT {
         msg!("Only .sol are accepted");
         return Err(SubRegisterError::WrongNameAccount.into());
     }

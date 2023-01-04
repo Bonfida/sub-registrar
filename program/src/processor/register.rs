@@ -1,5 +1,7 @@
 //! Register a subdomain
 
+use solana_program::sysvar;
+
 use crate::{
     error::SubRegisterError,
     state::{registry::Registry, Tag},
@@ -30,7 +32,7 @@ use {
     spl_name_service::state::{get_seeds_and_key, HASH_PREFIX},
 };
 
-const NAME_AUCTIONING: Pubkey = pubkey!("jCebN34bUfdeUYJT13J1yG16XWQpt5PDx6Mse9GUqhR");
+pub const NAME_AUCTIONING: Pubkey = pubkey!("jCebN34bUfdeUYJT13J1yG16XWQpt5PDx6Mse9GUqhR");
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
@@ -52,6 +54,9 @@ pub struct Accounts<'a, T> {
     /// The rent sysvar account
     pub rent_sysvar: &'a T,
 
+    /// The name auctioning program account
+    pub name_auctioning_program: &'a T,
+
     /// The .sol root domain
     pub root_domain: &'a T,
 
@@ -68,6 +73,7 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub registry: &'a T,
 
+    #[cons(writable)]
     pub parent_domain_account: &'a T,
 
     #[cons(writable)]
@@ -92,6 +98,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             spl_token_program: next_account_info(accounts_iter)?,
             spl_name_service: next_account_info(accounts_iter)?,
             rent_sysvar: next_account_info(accounts_iter)?,
+            name_auctioning_program: next_account_info(accounts_iter)?,
             root_domain: next_account_info(accounts_iter)?,
             reverse_lookup_class: next_account_info(accounts_iter)?,
             fee_account: next_account_info(accounts_iter)?,
@@ -107,6 +114,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(accounts.spl_token_program, &spl_token::ID)?;
         check_account_key(accounts.system_program, &system_program::ID)?;
         check_account_key(accounts.spl_name_service, &spl_name_service::ID)?;
+        check_account_key(accounts.rent_sysvar, &sysvar::rent::id())?;
+        check_account_key(accounts.name_auctioning_program, &NAME_AUCTIONING)?;
 
         // Check owners
         check_account_owner(accounts.fee_source, &spl_token::ID)?;
@@ -143,7 +152,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         None,
         Some(&registry.domain_account),
     );
-    check_account_key(accounts.parent_domain_account, &name_account_key)?;
+    check_account_key(accounts.sub_domain_account, &name_account_key)?;
 
     // Transfer fees
     let price = utils::get_domain_price(params.domain.clone(), &registry.price_schedule);
@@ -164,7 +173,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             accounts.fee_payer.clone(),
         ],
     )?;
-
+    msg!("1");
     // Create sub
     let space: u32 = 1_000;
     let lamports = Rent::get().unwrap().minimum_balance(space as usize);
@@ -182,9 +191,17 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         Some(registry.domain_account),
         Some(*accounts.registry.key),
     )?;
-    invoke(
+
+    let seeds: &[&[u8]] = &[
+        Registry::SEEDS,
+        &registry.domain_account.to_bytes(),
+        &registry.authority.to_bytes(),
+        &[registry.nonce],
+    ];
+    invoke_signed(
         &ix,
         &[
+            accounts.spl_name_service.clone(),
             accounts.system_program.clone(),
             accounts.fee_payer.clone(),
             accounts.sub_domain_account.clone(),
@@ -192,16 +209,12 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             accounts.parent_domain_account.clone(),
             accounts.registry.clone(),
         ],
+        &[seeds],
     )?;
+    msg!("2");
 
     // Sub reverse should be passed in the accounts and check if does not already exist
     if accounts.sub_reverse_account.data_is_empty() {
-        let seeds: &[&[u8]] = &[
-            Registry::SEEDS,
-            &registry.domain_account.to_bytes(),
-            &registry.authority.to_bytes(),
-            &[registry.nonce],
-        ];
         let ix = create_reverse(
             NAME_AUCTIONING,
             name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
@@ -215,6 +228,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         invoke_signed(
             &ix,
             &[
+                accounts.name_auctioning_program.clone(),
                 accounts.rent_sysvar.clone(),
                 accounts.spl_name_service.clone(),
                 accounts.root_domain.clone(),
@@ -228,7 +242,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             &[seeds],
         )?;
     }
-
+    msg!("3");
     // Increment nb sub created
     registry.total_sub_created = registry
         .total_sub_created

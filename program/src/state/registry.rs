@@ -21,7 +21,7 @@ pub struct Registry {
 }
 
 impl Registry {
-    pub const SEEDS: &[u8; 8] = b"registry";
+    pub const SEEDS: &'static [u8; 8] = b"registry";
 
     pub fn new(
         authority: &Pubkey,
@@ -39,7 +39,7 @@ impl Registry {
             mint: *mint,
             domain_account: *domain_account,
             total_sub_created: 0,
-            price_schedule: price_schedule,
+            price_schedule,
         }
     }
 
