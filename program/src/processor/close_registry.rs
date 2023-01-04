@@ -1,7 +1,7 @@
 //! Close a registry account
 use crate::{
     error::SubRegisterError,
-    state::{registry::Registry, schedule::Schedule, Tag},
+    state::{registry::Registry, Tag},
 };
 
 use {
@@ -22,12 +22,7 @@ use {
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
-pub struct Params {
-    pub mint: Pubkey,
-    pub fee_account: Pubkey,
-    pub authority: Pubkey,
-    pub price_schedule: Schedule,
-}
+pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
@@ -42,7 +37,6 @@ pub struct Accounts<'a, T> {
     /// The domain account
     pub domain_name_account: &'a T,
 
-    #[cons(writable)]
     /// The new owner of the domain name account
     pub new_domain_owner: &'a T,
 
@@ -89,7 +83,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
+pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut registry = Registry::from_account_info(accounts.registry, crate::state::Tag::Registry)?;
 
@@ -109,7 +103,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     let seeds: &[&[u8]] = &[
         Registry::SEEDS,
         &accounts.domain_name_account.key.to_bytes(),
-        &params.authority.to_bytes(),
+        &registry.authority.to_bytes(),
         &[registry.nonce],
     ];
     let ix = spl_name_service::instruction::transfer(
@@ -124,7 +118,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         &[
             accounts.spl_name_program_id.clone(),
             accounts.domain_name_account.clone(),
-            accounts.new_domain_owner.clone(),
+            accounts.registry.clone(),
         ],
         &[seeds],
     )?;

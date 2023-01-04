@@ -1,7 +1,10 @@
 use crate::state::schedule::Schedule;
-use solana_program::{hash::hashv, pubkey::Pubkey};
-use spl_name_service::state::{get_seeds_and_key, HASH_PREFIX};
-use unicode_segmentation::UnicodeSegmentation;
+
+use {
+    solana_program::{hash::hashv, pubkey::Pubkey},
+    spl_name_service::state::{get_seeds_and_key, HASH_PREFIX},
+    unicode_segmentation::UnicodeSegmentation,
+};
 
 pub fn get_domain_price(domain: String, schedule: &Schedule) -> u64 {
     let len = domain.graphemes(true).count() as u64;

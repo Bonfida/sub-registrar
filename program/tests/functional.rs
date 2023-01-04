@@ -1,4 +1,3 @@
-use solana_program::{rent, system_program, sysvar};
 use sub_register::{
     entrypoint::process_instruction,
     instruction::{close_registry, create_registry, edit_registry, register, unregister},
@@ -8,6 +7,7 @@ use sub_register::{
 use {
     borsh::BorshSerialize,
     name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+    solana_program::{system_program, sysvar},
     solana_program_test::{processor, ProgramTest},
     solana_sdk::{
         account::Account,
@@ -16,8 +16,6 @@ use {
     },
     spl_associated_token_account::get_associated_token_address,
     spl_associated_token_account::instruction::create_associated_token_account,
-    spl_name_service::state::NameRecordHeader,
-    spl_token::instruction::mint_to,
 };
 
 pub mod common;
@@ -33,6 +31,9 @@ async fn test_functional() {
     // Bob creates a sub
     let bob = Keypair::new();
     let mint_authority = Keypair::new();
+
+    println!("[+] Alice key {}", alice.pubkey());
+    println!("[+] Bob key {}", bob.pubkey());
 
     let mut program_test = ProgramTest::new(
         "sub_register",
@@ -85,7 +86,7 @@ async fn test_functional() {
 
     // Create mock .sol domain
     let name_key = Keypair::new().pubkey();
-    println!("Domain name key {}", name_key);
+    println!("[+] Domain name key {}", name_key);
 
     let root_domain_data = spl_name_service::state::NameRecordHeader {
         parent_name: ROOT_DOMAIN_ACCOUNT,
@@ -155,6 +156,7 @@ async fn test_functional() {
 
     // A&lice creates regis&try
     let (registry_key, _) = Registry::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
+    println!("[+] Registry key {}", registry_key);
 
     let ix = create_registry(
         create_registry::Accounts {
@@ -270,6 +272,35 @@ async fn test_functional() {
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+        .await
+        .unwrap();
+    let ix = unregister(
+        unregister::Accounts {
+            system_program: &system_program::ID,
+            spl_name_service: &spl_name_service::ID,
+            registry: &registry_key,
+            sub_domain_account: &sub_domain_key,
+            domain_owner: &bob.pubkey(),
+        },
+        unregister::Params {},
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+        .await
+        .unwrap();
+
+    let ix = close_registry(
+        close_registry::Accounts {
+            system_program: &system_program::ID,
+            registry: &registry_key,
+            domain_name_account: &name_key,
+            new_domain_owner: &bob.pubkey(),
+            lamports_target: &mint_authority.pubkey(),
+            registry_authority: &alice.pubkey(),
+            spl_name_program_id: &spl_name_service::ID,
+        },
+        close_registry::Params {},
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
         .await
         .unwrap();
 }

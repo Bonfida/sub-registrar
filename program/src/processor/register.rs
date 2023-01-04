@@ -1,7 +1,5 @@
 //! Register a subdomain
 
-use solana_program::sysvar;
-
 use crate::{
     error::SubRegisterError,
     state::{registry::Registry, Tag},
@@ -23,13 +21,14 @@ use {
         program::invoke,
         program::invoke_signed,
         program_error::ProgramError,
+        program_pack::Pack,
         pubkey,
         pubkey::Pubkey,
         rent::Rent,
-        system_program,
+        system_program, sysvar,
         sysvar::Sysvar,
     },
-    spl_name_service::state::{get_seeds_and_key, HASH_PREFIX},
+    spl_name_service::state::{get_seeds_and_key, NameRecordHeader, HASH_PREFIX},
 };
 
 pub const NAME_AUCTIONING: Pubkey = pubkey!("jCebN34bUfdeUYJT13J1yG16XWQpt5PDx6Mse9GUqhR");
@@ -173,10 +172,12 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             accounts.fee_payer.clone(),
         ],
     )?;
-    msg!("1");
+
     // Create sub
     let space: u32 = 1_000;
-    let lamports = Rent::get().unwrap().minimum_balance(space as usize);
+    let lamports = Rent::get()
+        .unwrap()
+        .minimum_balance(space as usize + NameRecordHeader::LEN);
     let ix = spl_name_service::instruction::create(
         spl_name_service::ID,
         spl_name_service::instruction::NameRegistryInstruction::Create {
@@ -211,7 +212,6 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         ],
         &[seeds],
     )?;
-    msg!("2");
 
     // Sub reverse should be passed in the accounts and check if does not already exist
     if accounts.sub_reverse_account.data_is_empty() {
@@ -242,7 +242,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             &[seeds],
         )?;
     }
-    msg!("3");
+
     // Increment nb sub created
     registry.total_sub_created = registry
         .total_sub_created

@@ -1,11 +1,5 @@
 //! Edit a registry
 
-use solana_program::{
-    program::{invoke, invoke_signed},
-    rent::Rent,
-    system_instruction, system_program,
-};
-
 use crate::{
     error::SubRegisterError,
     state::{registry::Registry, schedule::Schedule, Tag},
@@ -22,8 +16,11 @@ use {
         account_info::{next_account_info, AccountInfo},
         entrypoint::ProgramResult,
         msg,
+        program::invoke,
         program_error::ProgramError,
         pubkey::Pubkey,
+        rent::Rent,
+        system_instruction, system_program,
         sysvar::Sysvar,
     },
     std::cmp::Ordering,
