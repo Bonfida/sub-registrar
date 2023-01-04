@@ -154,7 +154,7 @@ async fn test_functional() {
         .unwrap();
     let alice_fee_account = &get_associated_token_address(&alice.pubkey(), &mint);
 
-    // A&lice creates regis&try
+    // Alice creates registry
     let (registry_key, _) = Registry::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
     println!("[+] Registry key {}", registry_key);
 
@@ -283,6 +283,35 @@ async fn test_functional() {
             domain_owner: &bob.pubkey(),
         },
         unregister::Params {},
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+        .await
+        .unwrap();
+
+    let sub_domain = "some-test".to_string();
+    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    // Bob registers a subdomain
+    let ix = register(
+        register::Accounts {
+            name_auctioning_program: &register::NAME_AUCTIONING,
+            system_program: &system_program::ID,
+            spl_token_program: &spl_token::ID,
+            spl_name_service: &spl_name_service::ID,
+            rent_sysvar: &sysvar::rent::id(),
+            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            fee_account: alice_fee_account,
+            fee_source: &bob_ata,
+            registry: &registry_key,
+            parent_domain_account: &name_key,
+            sub_domain_account: &sub_domain_key,
+            sub_reverse_account: &sub_reverse_key,
+            fee_payer: &bob.pubkey(),
+        },
+        register::Params {
+            domain: format!("\0{}", sub_domain),
+        },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
         .await

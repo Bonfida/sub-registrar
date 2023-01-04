@@ -12,7 +12,7 @@ use {
         BorshSize, InstructionsAccount,
     },
     borsh::{BorshDeserialize, BorshSerialize},
-    name_auctioning::instructions::create_reverse,
+    name_auctioning::{instructions::create_reverse, processor::CENTRAL_STATE},
     solana_program::{
         account_info::{next_account_info, AccountInfo},
         entrypoint::ProgramResult,
@@ -116,11 +116,9 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(accounts.rent_sysvar, &sysvar::rent::id())?;
         check_account_key(accounts.name_auctioning_program, &NAME_AUCTIONING)?;
         check_account_key(accounts.root_domain, &ROOT_DOMAIN_ACCOUNT)?;
+        check_account_key(accounts.reverse_lookup_class, &CENTRAL_STATE)?;
 
         // Check owners
-        check_account_owner(accounts.reverse_lookup_class, &system_program::ID).or_else(|_| {
-            check_account_owner(accounts.reverse_lookup_class, &spl_name_service::ID)
-        })?;
         check_account_owner(accounts.fee_account, &spl_token::ID)?;
         check_account_owner(accounts.fee_source, &spl_token::ID)?;
         check_account_owner(accounts.registry, program_id)?;
