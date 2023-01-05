@@ -3,7 +3,7 @@ use sub_register::{
     instruction::{
         admin_register, close_registry, create_registry, edit_registry, register, unregister,
     },
-    state::{registry::Registry, schedule::Price, NAME_AUCTIONING},
+    state::{registry::Registry, schedule::Price, FEE_ACC_OWNER, NAME_AUCTIONING},
 };
 
 use {
@@ -149,6 +149,18 @@ async fn test_functional() {
         .unwrap();
     let alice_fee_account = &get_associated_token_address(&alice.pubkey(), &mint);
 
+    // Creates Bonfida fee account
+    let ix = create_associated_token_account(
+        &prg_test_ctx.payer.pubkey(),
+        &FEE_ACC_OWNER,
+        &mint,
+        &spl_token::ID,
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
+        .await
+        .unwrap();
+    let bonfida_fee_account = &get_associated_token_address(&FEE_ACC_OWNER, &mint);
+
     // Alice creates registry
     let (registry_key, _) = Registry::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
     println!("[+] Registry key {}", registry_key);
@@ -261,6 +273,7 @@ async fn test_functional() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -304,6 +317,7 @@ async fn test_functional() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),

@@ -4,7 +4,7 @@ use sub_register::{
     instruction::{
         admin_register, close_registry, create_registry, edit_registry, register, unregister,
     },
-    state::{registry::Registry, schedule::Price, NAME_AUCTIONING},
+    state::{registry::Registry, schedule::Price, FEE_ACC_OWNER, NAME_AUCTIONING},
 };
 
 use {
@@ -194,6 +194,18 @@ async fn test_errors() {
         .unwrap();
     let alice_fee_account = &get_associated_token_address(&alice.pubkey(), &mint);
 
+    // Creates Bonfida fee account
+    let ix = create_associated_token_account(
+        &prg_test_ctx.payer.pubkey(),
+        &FEE_ACC_OWNER,
+        &mint,
+        &spl_token::ID,
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
+        .await
+        .unwrap();
+    let bonfida_fee_account = &get_associated_token_address(&FEE_ACC_OWNER, &mint);
+
     // Alice creates regis&try
     let (registry_key, _) = Registry::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
     println!("[+] Registry key {}", registry_key);
@@ -264,6 +276,7 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -286,6 +299,7 @@ async fn test_errors() {
     // - Invalid sub
     // - Unregister invalid sub
     // - Admin register with wrong authority
+    // - Wrong bonfida fee account
     ////////////////////////////////
 
     // Test: Non .sol domain for registry
@@ -416,6 +430,7 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -441,6 +456,7 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -510,6 +526,7 @@ async fn test_errors() {
                     sub_domain_account: &sub_domain_key,
                     sub_reverse_account: &sub_reverse_key,
                     fee_payer: &bob.pubkey(),
+                    bonfida_fee_account: &bonfida_fee_account,
                 },
                 register::Params {
                     domain: format!("\0{}", sub_domain),
@@ -543,6 +560,7 @@ async fn test_errors() {
                 sub_domain_account: &sub_domain_key,
                 sub_reverse_account: &sub_reverse_key,
                 fee_payer: &bob.pubkey(),
+                bonfida_fee_account: &bonfida_fee_account,
             },
             register::Params { domain: sub_domain },
         )],
@@ -591,6 +609,39 @@ async fn test_errors() {
                 authority: &bob.pubkey(),
             },
             admin_register::Params {
+                domain: format!("\0{}", sub_domain),
+            },
+        )],
+        vec![&bob],
+    )
+    .await;
+    assert!(result.is_err());
+
+    // Test: Wrong bonfida fee account
+    let sub_domain = "invalid-sub".to_string();
+    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let result = sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![register(
+            register::Accounts {
+                name_auctioning_program: &NAME_AUCTIONING,
+                system_program: &system_program::ID,
+                spl_token_program: &spl_token::ID,
+                spl_name_service: &spl_name_service::ID,
+                rent_sysvar: &sysvar::rent::id(),
+                root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+                reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                fee_account: alice_fee_account,
+                fee_source: &bob_ata,
+                registry: &registry_key,
+                parent_domain_account: &name_key,
+                sub_domain_account: &sub_domain_key,
+                sub_reverse_account: &sub_reverse_key,
+                fee_payer: &bob.pubkey(),
+                bonfida_fee_account: &alice_fee_account,
+            },
+            register::Params {
                 domain: format!("\0{}", sub_domain),
             },
         )],

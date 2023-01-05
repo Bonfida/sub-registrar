@@ -6,7 +6,7 @@ use sub_register::{
     instruction::{
         admin_register, close_registry, create_registry, edit_registry, register, unregister,
     },
-    state::{registry::Registry, schedule::Price, Tag, NAME_AUCTIONING},
+    state::{registry::Registry, schedule::Price, Tag, FEE_ACC_OWNER, NAME_AUCTIONING},
     utils::get_subdomain_key,
 };
 
@@ -152,6 +152,18 @@ async fn test_state() {
         .await
         .unwrap();
     let alice_fee_account = &get_associated_token_address(&alice.pubkey(), &mint);
+
+    // Creates Bonfida fee account
+    let ix = create_associated_token_account(
+        &prg_test_ctx.payer.pubkey(),
+        &FEE_ACC_OWNER,
+        &mint,
+        &spl_token::ID,
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
+        .await
+        .unwrap();
+    let bonfida_fee_account = &get_associated_token_address(&FEE_ACC_OWNER, &mint);
 
     // A&lice creates regis&try
     let (registry_key, nonce) = Registry::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
@@ -506,6 +518,7 @@ async fn test_state() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -559,7 +572,8 @@ async fn test_state() {
         .unwrap();
     let token_account: spl_token::state::Account =
         spl_token::state::Account::unpack(&acc.data[..]).unwrap();
-    assert_eq!(token_account.amount, 8_000_000);
+    let mut total_fees = (8_000_000 * 5) / 100;
+    assert_eq!(token_account.amount, 8_000_000 - total_fees);
 
     // Change price schedule + register + verify
     let ix = edit_registry(
@@ -653,6 +667,7 @@ async fn test_state() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -680,7 +695,8 @@ async fn test_state() {
         .unwrap();
     let token_account: spl_token::state::Account =
         spl_token::state::Account::unpack(&acc.data[..]).unwrap();
-    assert_eq!(token_account.amount, 8_000_000 + 10_000_000);
+    total_fees += (10_000_000 * 5) / 100;
+    assert_eq!(token_account.amount, 8_000_000 + 10_000_000 - total_fees);
 
     let sub_domain = "1⛽️".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
@@ -703,6 +719,7 @@ async fn test_state() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -730,7 +747,11 @@ async fn test_state() {
         .unwrap();
     let token_account: spl_token::state::Account =
         spl_token::state::Account::unpack(&acc.data[..]).unwrap();
-    assert_eq!(token_account.amount, 8_000_000 + 10_000_000 + 8_000_000);
+    total_fees += (8_000_000 * 5) / 100;
+    assert_eq!(
+        token_account.amount,
+        8_000_000 + 10_000_000 + 8_000_000 - total_fees
+    );
 
     let sub_domain = "1⛽️🚦".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
@@ -753,6 +774,7 @@ async fn test_state() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -780,9 +802,10 @@ async fn test_state() {
         .unwrap();
     let token_account: spl_token::state::Account =
         spl_token::state::Account::unpack(&acc.data[..]).unwrap();
+    total_fees += (7_000_000 * 5) / 100;
     assert_eq!(
         token_account.amount,
-        8_000_000 + 10_000_000 + 8_000_000 + 7_000_000
+        8_000_000 + 10_000_000 + 8_000_000 + 7_000_000 - total_fees
     );
 
     // Unregister all subs
@@ -916,4 +939,15 @@ async fn test_state() {
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
         .await
         .unwrap();
+
+    // Check fee account
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(*bonfida_fee_account)
+        .await
+        .unwrap()
+        .unwrap();
+    let token_account: spl_token::state::Account =
+        spl_token::state::Account::unpack(&acc.data[..]).unwrap();
+    assert_eq!(token_account.amount, total_fees);
 }

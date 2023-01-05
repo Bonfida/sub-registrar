@@ -2,13 +2,15 @@
 
 use crate::{
     error::SubRegisterError,
-    state::{registry::Registry, Tag, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT},
+    state::{
+        registry::Registry, Tag, FEE_ACC_OWNER, FEE_PCT, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT,
+    },
     utils,
 };
 
 use {
     bonfida_utils::{
-        checks::{check_account_key, check_account_owner, check_signer},
+        checks::{check_account_key, check_account_owner, check_signer, check_token_account_owner},
         BorshSize, InstructionsAccount,
     },
     borsh::{BorshDeserialize, BorshSerialize},
@@ -81,6 +83,9 @@ pub struct Accounts<'a, T> {
     #[cons(writable, signer)]
     /// The fee payer account
     pub fee_payer: &'a T,
+
+    #[cons(writable)]
+    pub bonfida_fee_account: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -104,6 +109,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             sub_domain_account: next_account_info(accounts_iter)?,
             sub_reverse_account: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
+            bonfida_fee_account: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -124,6 +130,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.sub_reverse_account, &system_program::ID).or_else(|_| {
             check_account_owner(accounts.sub_reverse_account, &spl_name_service::ID)
         })?;
+        check_account_owner(accounts.bonfida_fee_account, &spl_token::ID)?;
 
         // Check signer
         check_signer(accounts.fee_payer)?;
@@ -138,6 +145,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
 
     check_account_key(accounts.fee_account, &registry.fee_account)?;
     check_account_key(accounts.parent_domain_account, &registry.domain_account)?;
+    check_token_account_owner(accounts.bonfida_fee_account, &FEE_ACC_OWNER)?;
 
     if !params.domain.starts_with('\0') {
         return Err(SubRegisterError::InvalidSubdomain.into());
@@ -166,6 +174,11 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
 
     // Transfer fees
     let price = utils::get_domain_price(params.domain.clone(), &registry.price_schedule);
+    let fees = (price
+        .checked_mul(FEE_PCT)
+        .ok_or(SubRegisterError::Overflow)?)
+        / 100;
+    let price = price.checked_sub(fees).ok_or(SubRegisterError::Overflow)?;
     let ix = spl_token::instruction::transfer(
         &spl_token::ID,
         accounts.fee_source.key,
@@ -180,6 +193,23 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             accounts.spl_token_program.clone(),
             accounts.fee_source.clone(),
             accounts.fee_account.clone(),
+            accounts.fee_payer.clone(),
+        ],
+    )?;
+    let ix = spl_token::instruction::transfer(
+        &spl_token::ID,
+        accounts.fee_source.key,
+        accounts.bonfida_fee_account.key,
+        accounts.fee_payer.key,
+        &[],
+        fees,
+    )?;
+    invoke(
+        &ix,
+        &[
+            accounts.spl_token_program.clone(),
+            accounts.fee_source.clone(),
+            accounts.bonfida_fee_account.clone(),
             accounts.fee_payer.clone(),
         ],
     )?;
