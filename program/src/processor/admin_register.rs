@@ -1,9 +1,8 @@
-//! Register a subdomain
+//! Allow the authority of a `Registry` to register a subdomain without token transfer
 
 use crate::{
     error::SubRegisterError,
     state::{registry::Registry, Tag, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT},
-    utils,
 };
 
 use {
@@ -18,7 +17,6 @@ use {
         entrypoint::ProgramResult,
         hash::hashv,
         msg,
-        program::invoke,
         program::invoke_signed,
         program_error::ProgramError,
         program_pack::Pack,
@@ -59,13 +57,6 @@ pub struct Accounts<'a, T> {
     /// The reverse lookup class accoutn
     pub reverse_lookup_class: &'a T,
 
-    /// The fee account of the registry
-    #[cons(writable)]
-    pub fee_account: &'a T,
-
-    #[cons(writable)]
-    pub fee_source: &'a T,
-
     #[cons(writable)]
     pub registry: &'a T,
 
@@ -80,7 +71,7 @@ pub struct Accounts<'a, T> {
 
     #[cons(writable, signer)]
     /// The fee payer account
-    pub fee_payer: &'a T,
+    pub authority: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -97,13 +88,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             name_auctioning_program: next_account_info(accounts_iter)?,
             root_domain: next_account_info(accounts_iter)?,
             reverse_lookup_class: next_account_info(accounts_iter)?,
-            fee_account: next_account_info(accounts_iter)?,
-            fee_source: next_account_info(accounts_iter)?,
             registry: next_account_info(accounts_iter)?,
             parent_domain_account: next_account_info(accounts_iter)?,
             sub_domain_account: next_account_info(accounts_iter)?,
             sub_reverse_account: next_account_info(accounts_iter)?,
-            fee_payer: next_account_info(accounts_iter)?,
+            authority: next_account_info(accounts_iter)?,
         };
 
         // Check keys
@@ -116,8 +105,6 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(accounts.reverse_lookup_class, &CENTRAL_STATE)?;
 
         // Check owners
-        check_account_owner(accounts.fee_account, &spl_token::ID)?;
-        check_account_owner(accounts.fee_source, &spl_token::ID)?;
         check_account_owner(accounts.registry, program_id)?;
         check_account_owner(accounts.parent_domain_account, &spl_name_service::ID)?;
         check_account_owner(accounts.sub_domain_account, &system_program::ID)?;
@@ -126,7 +113,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         })?;
 
         // Check signer
-        check_signer(accounts.fee_payer)?;
+        check_signer(accounts.authority)?;
 
         Ok(accounts)
     }
@@ -136,7 +123,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut registry = Registry::from_account_info(accounts.registry, Tag::Registry)?;
 
-    check_account_key(accounts.fee_account, &registry.fee_account)?;
+    check_account_key(accounts.authority, &registry.authority)?;
     check_account_key(accounts.parent_domain_account, &registry.domain_account)?;
 
     if !params.domain.starts_with('\0') {
@@ -164,26 +151,6 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     );
     check_account_key(accounts.sub_domain_account, &name_account_key)?;
 
-    // Transfer fees
-    let price = utils::get_domain_price(params.domain.clone(), &registry.price_schedule);
-    let ix = spl_token::instruction::transfer(
-        &spl_token::ID,
-        accounts.fee_source.key,
-        accounts.fee_account.key,
-        accounts.fee_payer.key,
-        &[],
-        price,
-    )?;
-    invoke(
-        &ix,
-        &[
-            accounts.spl_token_program.clone(),
-            accounts.fee_source.clone(),
-            accounts.fee_account.clone(),
-            accounts.fee_payer.clone(),
-        ],
-    )?;
-
     // Create sub
     let space: u32 = 1_000;
     let lamports = Rent::get()
@@ -197,8 +164,8 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             space,
         },
         *accounts.sub_domain_account.key,
-        *accounts.fee_payer.key,
-        *accounts.fee_payer.key,
+        *accounts.authority.key,
+        *accounts.authority.key,
         None,
         Some(registry.domain_account),
         Some(*accounts.registry.key),
@@ -215,9 +182,9 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         &[
             accounts.spl_name_service.clone(),
             accounts.system_program.clone(),
-            accounts.fee_payer.clone(),
+            accounts.authority.clone(),
             accounts.sub_domain_account.clone(),
-            accounts.fee_payer.clone(),
+            accounts.authority.clone(),
             accounts.parent_domain_account.clone(),
             accounts.registry.clone(),
         ],
@@ -231,7 +198,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
             *accounts.sub_reverse_account.key,
             name_auctioning::processor::CENTRAL_STATE,
-            *accounts.fee_payer.key,
+            *accounts.authority.key,
             params.domain,
             Some(registry.domain_account),
             Some(*accounts.registry.key),
@@ -246,7 +213,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
                 accounts.sub_reverse_account.clone(),
                 accounts.system_program.clone(),
                 accounts.reverse_lookup_class.clone(),
-                accounts.fee_payer.clone(),
+                accounts.authority.clone(),
                 accounts.parent_domain_account.clone(),
                 accounts.registry.clone(),
             ],

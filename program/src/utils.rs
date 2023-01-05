@@ -44,3 +44,46 @@ pub fn get_subdomain_reverse(ui_subdomain: String, parent: &Pubkey) -> Pubkey {
     );
     name_account_key
 }
+
+#[test]
+fn test_price_logic() {
+    use crate::state::schedule::Price;
+    let schedule: Schedule = vec![
+        Price {
+            length: 1,
+            price: 100,
+        },
+        Price {
+            length: 2,
+            price: 90,
+        },
+        Price {
+            length: 3,
+            price: 80,
+        },
+        Price {
+            length: 4,
+            price: 70,
+        },
+        Price {
+            length: 5,
+            price: 60,
+        },
+    ];
+
+    assert_eq!(get_domain_price("\01".to_string(), &schedule), 100);
+    assert_eq!(get_domain_price("\011".to_string(), &schedule), 90);
+    assert_eq!(get_domain_price("\0111".to_string(), &schedule), 80);
+    assert_eq!(get_domain_price("\01111".to_string(), &schedule), 70);
+    assert_eq!(get_domain_price("\011111".to_string(), &schedule), 60);
+    assert_eq!(get_domain_price("\0111111".to_string(), &schedule), 60);
+    assert_eq!(get_domain_price("\01111111111".to_string(), &schedule), 60);
+
+    assert_eq!(get_domain_price("\0😀".to_string(), &schedule), 100);
+    assert_eq!(get_domain_price("\01😀".to_string(), &schedule), 90);
+    assert_eq!(get_domain_price("\01😀1".to_string(), &schedule), 80);
+    assert_eq!(get_domain_price("\011😀1".to_string(), &schedule), 70);
+    assert_eq!(get_domain_price("\0111😀1".to_string(), &schedule), 60);
+    assert_eq!(get_domain_price("\011😀111".to_string(), &schedule), 60);
+    assert_eq!(get_domain_price("\011😀1111111".to_string(), &schedule), 60);
+}

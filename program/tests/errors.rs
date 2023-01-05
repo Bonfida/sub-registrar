@@ -1,8 +1,10 @@
 //! Tests of things that should error
 use sub_register::{
     entrypoint::process_instruction,
-    instruction::{close_registry, create_registry, edit_registry, register, unregister},
-    state::{registry::Registry, schedule::Price},
+    instruction::{
+        admin_register, close_registry, create_registry, edit_registry, register, unregister,
+    },
+    state::{registry::Registry, schedule::Price, NAME_AUCTIONING},
 };
 
 use {
@@ -43,11 +45,7 @@ async fn test_errors() {
     );
 
     program_test.add_program("spl_name_service", spl_name_service::ID, None);
-    program_test.add_program(
-        "name_auctioning",
-        sub_register::instruction::register::NAME_AUCTIONING,
-        None,
-    );
+    program_test.add_program("name_auctioning", NAME_AUCTIONING, None);
 
     program_test.add_account(
         alice.pubkey(),
@@ -63,15 +61,12 @@ async fn test_errors() {
             ..Account::default()
         },
     );
-    let (_, nonce) = Pubkey::find_program_address(
-        &[&sub_register::instruction::register::NAME_AUCTIONING.to_bytes()],
-        &sub_register::instruction::register::NAME_AUCTIONING,
-    );
+    let (_, nonce) = Pubkey::find_program_address(&[&NAME_AUCTIONING.to_bytes()], &NAME_AUCTIONING);
     program_test.add_account(
         name_auctioning::processor::CENTRAL_STATE,
         Account {
             lamports: 1_000_000,
-            owner: sub_register::instruction::register::NAME_AUCTIONING,
+            owner: NAME_AUCTIONING,
             data: vec![nonce],
             ..Account::default()
         },
@@ -255,7 +250,7 @@ async fn test_errors() {
     // Bob registers a subdomain of length 2
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &register::NAME_AUCTIONING,
+            name_auctioning_program: &NAME_AUCTIONING,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
@@ -290,6 +285,7 @@ async fn test_errors() {
     // - Close + Register in same transaction
     // - Invalid sub
     // - Unregister invalid sub
+    // - Admin register with wrong authority
     ////////////////////////////////
 
     // Test: Non .sol domain for registry
@@ -406,7 +402,7 @@ async fn test_errors() {
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &register::NAME_AUCTIONING,
+            name_auctioning_program: &NAME_AUCTIONING,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
@@ -431,7 +427,7 @@ async fn test_errors() {
     // Test: Register with not enough funds
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &register::NAME_AUCTIONING,
+            name_auctioning_program: &NAME_AUCTIONING,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
@@ -500,7 +496,7 @@ async fn test_errors() {
             ),
             register(
                 register::Accounts {
-                    name_auctioning_program: &register::NAME_AUCTIONING,
+                    name_auctioning_program: &NAME_AUCTIONING,
                     system_program: &system_program::ID,
                     spl_token_program: &spl_token::ID,
                     spl_name_service: &spl_name_service::ID,
@@ -533,7 +529,7 @@ async fn test_errors() {
         &mut prg_test_ctx,
         vec![register(
             register::Accounts {
-                name_auctioning_program: &register::NAME_AUCTIONING,
+                name_auctioning_program: &NAME_AUCTIONING,
                 system_program: &system_program::ID,
                 spl_token_program: &spl_token::ID,
                 spl_name_service: &spl_name_service::ID,
@@ -567,6 +563,36 @@ async fn test_errors() {
                 domain_owner: &bob.pubkey(),
             },
             unregister::Params {},
+        )],
+        vec![&bob],
+    )
+    .await;
+    assert!(result.is_err());
+
+    // Test: Admin register with wrong authority
+    let sub_domain = "some-admin-test".to_string();
+    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let result = sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![admin_register(
+            admin_register::Accounts {
+                name_auctioning_program: &NAME_AUCTIONING,
+                system_program: &system_program::ID,
+                spl_token_program: &spl_token::ID,
+                spl_name_service: &spl_name_service::ID,
+                rent_sysvar: &sysvar::rent::id(),
+                root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+                reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                registry: &registry_key,
+                parent_domain_account: &name_key,
+                sub_domain_account: &sub_domain_key,
+                sub_reverse_account: &sub_reverse_key,
+                authority: &bob.pubkey(),
+            },
+            admin_register::Params {
+                domain: format!("\0{}", sub_domain),
+            },
         )],
         vec![&bob],
     )

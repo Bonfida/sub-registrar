@@ -9,6 +9,7 @@ use {
 
 use crate::instruction::ProgramInstruction;
 
+pub mod admin_register;
 pub mod close_registry;
 pub mod create_registry;
 pub mod edit_registry;
@@ -59,6 +60,12 @@ impl Processor {
                 let params = close_registry::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 close_registry::process(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminRegister => {
+                msg!("[+] Instruction: Admin register Instruction");
+                let params = admin_register::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_register::process(program_id, accounts, params)?;
             }
         }
 

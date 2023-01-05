@@ -3,8 +3,10 @@
 use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
-    instruction::{close_registry, create_registry, edit_registry, register, unregister},
-    state::{registry::Registry, schedule::Price, Tag},
+    instruction::{
+        admin_register, close_registry, create_registry, edit_registry, register, unregister,
+    },
+    state::{registry::Registry, schedule::Price, Tag, NAME_AUCTIONING},
     utils::get_subdomain_key,
 };
 
@@ -46,11 +48,7 @@ async fn test_state() {
     );
 
     program_test.add_program("spl_name_service", spl_name_service::ID, None);
-    program_test.add_program(
-        "name_auctioning",
-        sub_register::instruction::register::NAME_AUCTIONING,
-        None,
-    );
+    program_test.add_program("name_auctioning", NAME_AUCTIONING, None);
 
     program_test.add_account(
         alice.pubkey(),
@@ -66,15 +64,12 @@ async fn test_state() {
             ..Account::default()
         },
     );
-    let (_, nonce) = Pubkey::find_program_address(
-        &[&sub_register::instruction::register::NAME_AUCTIONING.to_bytes()],
-        &sub_register::instruction::register::NAME_AUCTIONING,
-    );
+    let (_, nonce) = Pubkey::find_program_address(&[&NAME_AUCTIONING.to_bytes()], &NAME_AUCTIONING);
     program_test.add_account(
         name_auctioning::processor::CENTRAL_STATE,
         Account {
             lamports: 1_000_000,
-            owner: sub_register::instruction::register::NAME_AUCTIONING,
+            owner: NAME_AUCTIONING,
             data: vec![nonce],
             ..Account::default()
         },
@@ -497,7 +492,7 @@ async fn test_state() {
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &register::NAME_AUCTIONING,
+            name_auctioning_program: &NAME_AUCTIONING,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
@@ -644,7 +639,7 @@ async fn test_state() {
     // Bob registers a subdomain of length 1
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &register::NAME_AUCTIONING,
+            name_auctioning_program: &NAME_AUCTIONING,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
@@ -694,7 +689,7 @@ async fn test_state() {
     // Bob registers a subdomain of length 2
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &register::NAME_AUCTIONING,
+            name_auctioning_program: &NAME_AUCTIONING,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
@@ -744,7 +739,7 @@ async fn test_state() {
     // Bob registers a subdomain of length 3
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &register::NAME_AUCTIONING,
+            name_auctioning_program: &NAME_AUCTIONING,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
@@ -839,6 +834,73 @@ async fn test_state() {
     expected_registry.total_sub_created = 0;
     assert_eq!(registry, expected_registry);
 
+    // Admin register
+    let sub_domain = "some-admin-test".to_string();
+    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![admin_register(
+            admin_register::Accounts {
+                name_auctioning_program: &NAME_AUCTIONING,
+                system_program: &system_program::ID,
+                spl_token_program: &spl_token::ID,
+                spl_name_service: &spl_name_service::ID,
+                rent_sysvar: &sysvar::rent::id(),
+                root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+                reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                registry: &registry_key,
+                parent_domain_account: &name_key,
+                sub_domain_account: &sub_domain_key,
+                sub_reverse_account: &sub_reverse_key,
+                authority: &alice.pubkey(),
+            },
+            admin_register::Params {
+                domain: format!("\0{}", sub_domain),
+            },
+        )],
+        vec![&alice],
+    )
+    .await
+    .unwrap();
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(registry_key)
+        .await
+        .unwrap()
+        .unwrap();
+    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registry.total_sub_created = 1;
+    assert_eq!(registry, expected_registry);
+
+    // Unregister admin created sub
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![unregister(
+            unregister::Accounts {
+                system_program: &system_program::ID,
+                spl_name_service: &spl_name_service::ID,
+                registry: &registry_key,
+                sub_domain_account: &sub_domain_key,
+                domain_owner: &alice.pubkey(),
+            },
+            unregister::Params {},
+        )],
+        vec![&alice],
+    )
+    .await
+    .unwrap();
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(registry_key)
+        .await
+        .unwrap()
+        .unwrap();
+    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registry.total_sub_created = 0;
+    assert_eq!(registry, expected_registry);
+
+    // Close registry
     let ix = close_registry(
         close_registry::Accounts {
             system_program: &system_program::ID,
