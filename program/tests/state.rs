@@ -179,6 +179,7 @@ async fn test_state() {
             spl_name_program_id: &spl_name_service::ID,
         },
         create_registry::Params {
+            nft_gated_collection: None,
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
@@ -207,6 +208,7 @@ async fn test_state() {
         .unwrap();
     let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
     let mut expected_registry = Registry {
+        nft_gated_collection: None,
         tag: Tag::Registry,
         nonce,
         authority: alice.pubkey(),

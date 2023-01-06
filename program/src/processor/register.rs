@@ -86,6 +86,9 @@ pub struct Accounts<'a, T> {
 
     #[cons(writable)]
     pub bonfida_fee_account: &'a T,
+
+    pub nft_account: Option<&'a T>,
+    pub nft_metadata_account: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -110,6 +113,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             sub_reverse_account: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
             bonfida_fee_account: next_account_info(accounts_iter)?,
+            nft_account: next_account_info(accounts_iter).ok(),
+            nft_metadata_account: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -153,6 +158,24 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
 
     if params.domain.trim().to_lowercase() != params.domain {
         return Err(SubRegisterError::InvalidSubdomain.into());
+    }
+
+    // Handle NFT gated case firts
+    if let Some(collection) = registry.nft_gated_collection {
+        let nft_account = accounts
+            .nft_account
+            .ok_or(SubRegisterError::MustProvideNft)?;
+        let nft_metadata_account = accounts
+            .nft_account
+            .ok_or(SubRegisterError::MustProvideNftMetadata)?;
+        // Accounts checks
+        check_account_owner(nft_account, &spl_token::ID)?;
+        check_account_owner(nft_metadata_account, &spl_token::ID)?; // <- Should be MPL
+        // Check metadata PDA deriation
+
+        // TODO
+        // check_nft_holding()?;
+        // check_metadata()?;
     }
 
     // Check sub account derivation

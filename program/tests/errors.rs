@@ -245,6 +245,7 @@ async fn test_errors() {
                     price: 10_000_000_001,
                 },
             ],
+            nft_gated_collection: None,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -320,6 +321,7 @@ async fn test_errors() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
+            nft_gated_collection: None,
             price_schedule: vec![
                 Price {
                     length: 1,

@@ -177,6 +177,7 @@ async fn test_functional() {
         create_registry::Params {
             mint,
             fee_account: *alice_fee_account,
+            nft_gated_collection: None,
             authority: alice.pubkey(),
             price_schedule: vec![
                 Price {

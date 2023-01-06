@@ -1,7 +1,9 @@
-use crate::state::schedule::Schedule;
+use solana_program::{program_error::ProgramError, program_pack::Pack};
+
+use crate::{error::SubRegisterError, state::schedule::Schedule};
 
 use {
-    solana_program::{hash::hashv, pubkey::Pubkey},
+    solana_program::{account_info::AccountInfo, hash::hashv, pubkey::Pubkey},
     spl_name_service::state::{get_seeds_and_key, HASH_PREFIX},
     unicode_segmentation::UnicodeSegmentation,
 };
@@ -43,6 +45,38 @@ pub fn get_subdomain_reverse(ui_subdomain: String, parent: &Pubkey) -> Pubkey {
         Some(parent),
     );
     name_account_key
+}
+
+// Assumes the account is owned by SPL Token !!!!
+pub fn check_nft_holding(
+    nft_account: &AccountInfo,
+    expected_owner: &Pubkey,
+) -> Result<(), ProgramError> {
+    // Deserialize token account
+    let token_acc = spl_token::state::Account::unpack(&nft_account.data.borrow())?;
+
+    // Check correct owner
+    if token_acc.owner != *expected_owner {
+        return Err(SubRegisterError::WrongOwner.into());
+    }
+
+    // Check correct amount
+    if token_acc.amount != 1 {
+        return Err(SubRegisterError::MustHoldOneNFt.into());
+    }
+
+    Ok(())
+}
+
+// Assumes the account is owned by MPL token metadata !!!!
+pub fn check_metadata(
+    nft_metadata_account: &AccountInfo,
+    expected_collection: &Pubkey,
+) -> Result<(), ProgramError> {
+    // Deserialize metadata
+    // Check collection
+    // Check collection is verified
+    Ok(())
 }
 
 #[test]

@@ -18,6 +18,7 @@ pub struct Registry {
     pub domain_account: Pubkey,
     pub total_sub_created: u64,
     pub price_schedule: schedule::Schedule,
+    pub nft_gated_collection: Option<Pubkey>,
 }
 
 impl Registry {
@@ -30,6 +31,7 @@ impl Registry {
         domain_account: &Pubkey,
         price_schedule: schedule::Schedule,
         nonce: u8,
+        nft_gated_collection: Option<Pubkey>,
     ) -> Self {
         Self {
             tag: super::Tag::Registry,
@@ -40,6 +42,7 @@ impl Registry {
             domain_account: *domain_account,
             total_sub_created: 0,
             price_schedule,
+            nft_gated_collection,
         }
     }
 

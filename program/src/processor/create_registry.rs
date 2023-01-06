@@ -32,6 +32,7 @@ pub struct Params {
     pub fee_account: Pubkey,
     pub authority: Pubkey,
     pub price_schedule: Schedule,
+    pub nft_gated_collection: Option<Pubkey>,
 }
 
 #[derive(InstructionsAccount)]
@@ -122,6 +123,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], mut params: Params
         accounts.domain_name_account.key,
         params.price_schedule,
         nonce,
+        params.nft_gated_collection,
     );
     Cpi::create_account(
         program_id,
