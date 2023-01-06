@@ -49,6 +49,35 @@ async fn test_state() {
 
     program_test.add_program("spl_name_service", spl_name_service::ID, None);
     program_test.add_program("name_auctioning", NAME_AUCTIONING, None);
+    program_test.add_program("mpl_token_metadata", mpl_token_metadata::ID, None);
+
+    // Add mock NFT & collection
+    let mut data: Vec<u8> = vec![];
+    common::metadata::get_metadata()
+        .serialize(&mut data)
+        .unwrap();
+    program_test.add_account(
+        common::metadata::NFT_METADATA_KEY,
+        Account {
+            owner: mpl_token_metadata::ID,
+            lamports: 100_000_000_000,
+            data,
+            ..Account::default()
+        },
+    );
+
+    let mut data = [0; spl_token::state::Account::LEN];
+    common::metadata::get_nft_account(&bob.pubkey()).pack_into_slice(&mut data);
+    let bob_nft_account = Pubkey::new_unique();
+    program_test.add_account(
+        bob_nft_account,
+        Account {
+            owner: spl_token::ID,
+            lamports: 100_000_000_000,
+            data: data.into(),
+            ..Account::default()
+        },
+    );
 
     program_test.add_account(
         alice.pubkey(),
@@ -165,7 +194,7 @@ async fn test_state() {
         .unwrap();
     let bonfida_fee_account = &get_associated_token_address(&FEE_ACC_OWNER, &mint);
 
-    // A&lice creates regis&try
+    // Alice creates registry
     let (registry_key, nonce) = Registry::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
     println!("[+] Registry key {}", registry_key);
 
@@ -179,6 +208,7 @@ async fn test_state() {
             spl_name_program_id: &spl_name_service::ID,
         },
         create_registry::Params {
+            nft_gated_collection: None,
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
@@ -207,6 +237,7 @@ async fn test_state() {
         .unwrap();
     let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
     let mut expected_registry = Registry {
+        nft_gated_collection: None,
         tag: Tag::Registry,
         nonce,
         authority: alice.pubkey(),
@@ -235,6 +266,7 @@ async fn test_state() {
             registry: &registry_key,
         },
         edit_registry::Params {
+            new_collection: None,
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
@@ -289,6 +321,7 @@ async fn test_state() {
             registry: &registry_key,
         },
         edit_registry::Params {
+            new_collection: None,
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
@@ -336,6 +369,7 @@ async fn test_state() {
             registry: &registry_key,
         },
         edit_registry::Params {
+            new_collection: None,
             new_authority: None,
             new_mint: Some(new_mint),
             new_fee_account: None,
@@ -364,6 +398,7 @@ async fn test_state() {
             registry: &registry_key,
         },
         edit_registry::Params {
+            new_collection: None,
             new_authority: None,
             new_mint: Some(mint),
             new_fee_account: None,
@@ -393,6 +428,7 @@ async fn test_state() {
             registry: &registry_key,
         },
         edit_registry::Params {
+            new_collection: None,
             new_authority: None,
             new_mint: None,
             new_fee_account: Some(new_fee_account),
@@ -420,6 +456,7 @@ async fn test_state() {
             registry: &registry_key,
         },
         edit_registry::Params {
+            new_collection: None,
             new_authority: None,
             new_mint: None,
             new_fee_account: Some(*alice_fee_account),
@@ -452,6 +489,7 @@ async fn test_state() {
             new_authority: Some(new_authority.pubkey()),
             new_mint: None,
             new_fee_account: None,
+            new_collection: None,
             new_price_schedule: None,
         },
     );
@@ -477,6 +515,7 @@ async fn test_state() {
             registry: &registry_key,
         },
         edit_registry::Params {
+            new_collection: None,
             new_authority: Some(alice.pubkey()),
             new_mint: None,
             new_fee_account: None,
@@ -519,6 +558,8 @@ async fn test_state() {
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
             bonfida_fee_account: &bonfida_fee_account,
+            nft_account: None,
+            nft_metadata_account: None,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -583,6 +624,7 @@ async fn test_state() {
             registry: &registry_key,
         },
         edit_registry::Params {
+            new_collection: None,
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
@@ -668,6 +710,8 @@ async fn test_state() {
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
             bonfida_fee_account: &bonfida_fee_account,
+            nft_account: None,
+            nft_metadata_account: None,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -720,6 +764,8 @@ async fn test_state() {
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
             bonfida_fee_account: &bonfida_fee_account,
+            nft_account: None,
+            nft_metadata_account: None,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -775,6 +821,8 @@ async fn test_state() {
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
             bonfida_fee_account: &bonfida_fee_account,
+            nft_account: None,
+            nft_metadata_account: None,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -929,7 +977,7 @@ async fn test_state() {
             system_program: &system_program::ID,
             registry: &registry_key,
             domain_name_account: &name_key,
-            new_domain_owner: &bob.pubkey(),
+            new_domain_owner: &alice.pubkey(),
             lamports_target: &mint_authority.pubkey(),
             registry_authority: &alice.pubkey(),
             spl_name_program_id: &spl_name_service::ID,
@@ -950,4 +998,140 @@ async fn test_state() {
     let token_account: spl_token::state::Account =
         spl_token::state::Account::unpack(&acc.data[..]).unwrap();
     assert_eq!(token_account.amount, total_fees);
+
+    ////////////////////////////////////////
+    //
+    // Test with NFT gated registrar
+    //
+    ////////////////////////////////////////
+
+    // Test: create a registrar with nft collection
+    let ix = create_registry(
+        create_registry::Accounts {
+            system_program: &system_program::ID,
+            registry: &registry_key,
+            domain_name_account: &name_key,
+            domain_owner: &alice.pubkey(),
+            fee_payer: &prg_test_ctx.payer.pubkey(),
+            spl_name_program_id: &spl_name_service::ID,
+        },
+        create_registry::Params {
+            nft_gated_collection: Some(common::metadata::COLLECTION_KEY),
+            mint,
+            fee_account: *alice_fee_account,
+            authority: alice.pubkey(),
+            price_schedule: vec![
+                Price {
+                    length: 2,
+                    price: 10_000_000,
+                },
+                Price {
+                    length: 1,
+                    price: 10_000_000,
+                },
+            ],
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
+        .await
+        .unwrap();
+    let mut expected_registrar = Registry {
+        nft_gated_collection: Some(common::metadata::COLLECTION_KEY),
+        tag: Tag::Registry,
+        nonce,
+        authority: alice.pubkey(),
+        fee_account: *alice_fee_account,
+        mint,
+        domain_account: name_key,
+        total_sub_created: 0,
+        price_schedule: vec![
+            Price {
+                length: 1,
+                price: 10_000_000,
+            },
+            Price {
+                length: 2,
+                price: 10_000_000,
+            },
+        ],
+    };
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(registry_key)
+        .await
+        .unwrap()
+        .unwrap();
+    let registrar: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
+    assert_eq!(expected_registrar, registrar);
+
+    // Test: edit the registrar
+    let ix = edit_registry(
+        edit_registry::Accounts {
+            system_program: &system_program::ID,
+            authority: &alice.pubkey(),
+            registry: &registry_key,
+        },
+        edit_registry::Params {
+            new_collection: None,
+            new_authority: Some(alice.pubkey()),
+            new_mint: None,
+            new_fee_account: None,
+            new_price_schedule: Some(vec![
+                Price {
+                    length: 1,
+                    price: 10_000_000,
+                },
+                Price {
+                    length: 2,
+                    price: 8_000_000,
+                },
+                Price {
+                    length: 3,
+                    price: 7_000_000,
+                },
+                Price {
+                    length: 4,
+                    price: 6_000_000,
+                },
+                Price {
+                    length: 5,
+                    price: 5_000_000,
+                },
+            ]),
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
+        .await
+        .unwrap();
+    // Verify state
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(registry_key)
+        .await
+        .unwrap()
+        .unwrap();
+    let registrar: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.price_schedule = vec![
+        Price {
+            length: 1,
+            price: 10_000_000,
+        },
+        Price {
+            length: 2,
+            price: 8_000_000,
+        },
+        Price {
+            length: 3,
+            price: 7_000_000,
+        },
+        Price {
+            length: 4,
+            price: 6_000_000,
+        },
+        Price {
+            length: 5,
+            price: 5_000_000,
+        },
+    ];
+    assert_eq!(registrar, expected_registrar);
 }

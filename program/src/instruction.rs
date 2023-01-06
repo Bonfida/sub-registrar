@@ -11,8 +11,8 @@ use {
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum ProgramInstruction {
     /// Create registry
-    /// 
-    /// 
+    ///
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -23,7 +23,7 @@ pub enum ProgramInstruction {
     /// | 5     | ❌        | ❌      | The SPL name service program ID      |
     CreateRegistry,
     /// Edit a registry
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ❌        | ❌      | The system program account |
@@ -31,7 +31,7 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ❌      | The registry to edit       |
     EditRegistry,
     /// Register a subdomain
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -51,7 +51,7 @@ pub enum ProgramInstruction {
     /// | 14    | ✅        | ❌      |                                      |
     Register,
     /// Unregister a subdomain
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -61,7 +61,7 @@ pub enum ProgramInstruction {
     /// | 4     | ✅        | ✅      | The fee payer account                |
     Unregister,
     /// Close a registry account
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                              |
     /// | -------------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account               |
@@ -73,7 +73,7 @@ pub enum ProgramInstruction {
     /// | 6     | ❌        | ❌      | The SPL name service program ID          |
     CloseRegistry,
     /// Allow the authority of a `Registry` to register a subdomain without token transfer
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |

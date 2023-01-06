@@ -22,6 +22,16 @@ pub enum SubRegisterError {
     Overflow,
     #[error("Invalid subdomain")]
     InvalidSubdomain,
+    #[error("Must hold one NFT")]
+    MustHoldOneNFt,
+    #[error("Must provide NFT account")]
+    MustProvideNft,
+    #[error("Must provide NFT metadata account")]
+    MustProvideNftMetadata,
+    #[error("NFT must have a collection")]
+    MustHaveCollection,
+    #[error("Invalid collection")]
+    InvalidCollection,
 }
 
 impl From<SubRegisterError> for ProgramError {

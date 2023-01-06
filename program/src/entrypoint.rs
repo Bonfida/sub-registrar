@@ -44,6 +44,17 @@ impl PrintProgramError for SubRegisterError {
             SubRegisterError::CannotCloseRegistry => msg!("[+] Error: Cannot close registry"),
             SubRegisterError::Overflow => msg!("[+] Error: Numerical overflow"),
             SubRegisterError::InvalidSubdomain => msg!("[+] Error: Invalid subdomain"),
+            SubRegisterError::MustHoldOneNFt => msg!("[+] Error: Must hold one NFT"),
+            SubRegisterError::MustProvideNft => msg!("[+] Error: Must provide NFT"),
+            SubRegisterError::MustProvideNftMetadata => {
+                msg!("[+] Error: Must provide NFT metadata account")
+            }
+            SubRegisterError::MustHaveCollection => {
+                msg!("[+] Error: NFT must have a collection")
+            }
+            SubRegisterError::InvalidCollection => {
+                msg!("[+] Error: Invalid collection")
+            }
         }
     }
 }

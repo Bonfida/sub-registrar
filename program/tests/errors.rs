@@ -1,4 +1,5 @@
 //! Tests of things that should error
+use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
     instruction::{
@@ -6,7 +7,6 @@ use sub_register::{
     },
     state::{registry::Registry, schedule::Price, FEE_ACC_OWNER, NAME_AUCTIONING},
 };
-
 use {
     borsh::BorshSerialize,
     name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
@@ -46,6 +46,52 @@ async fn test_errors() {
 
     program_test.add_program("spl_name_service", spl_name_service::ID, None);
     program_test.add_program("name_auctioning", NAME_AUCTIONING, None);
+    program_test.add_program("mpl_token_metadata", mpl_token_metadata::ID, None);
+
+    // Add mock NFT & collection
+    let mut data: Vec<u8> = vec![];
+    let mut metadata = common::metadata::get_metadata();
+    metadata.collection.as_mut().unwrap().verified = false;
+    metadata.serialize(&mut data)
+        .unwrap();
+    program_test.add_account(
+        common::metadata::NFT_METADATA_KEY,
+        Account {
+            owner: mpl_token_metadata::ID,
+            lamports: 100_000_000_000,
+            data,
+            ..Account::default()
+        },
+    );
+
+    let mut data = [0; spl_token::state::Account::LEN];
+    let mut acc_data = common::metadata::get_nft_account(&bob.pubkey());
+    acc_data.amount = 0;
+    acc_data.pack_into_slice(&mut data);
+    let bob_nft_account_zero_amount = Pubkey::new_unique();
+    program_test.add_account(
+        bob_nft_account_zero_amount,
+        Account {
+            owner: spl_token::ID,
+            lamports: 100_000_000_000,
+            data: data.into(),
+            ..Account::default()
+        },
+    );
+
+    let mut data = [0; spl_token::state::Account::LEN];
+    let acc_data = common::metadata::get_nft_account(&bob.pubkey());
+    acc_data.pack_into_slice(&mut data);
+    let bob_nft_account = Pubkey::new_unique();
+    program_test.add_account(
+        bob_nft_account,
+        Account {
+            owner: spl_token::ID,
+            lamports: 100_000_000_000,
+            data: data.into(),
+            ..Account::default()
+        },
+    );
 
     program_test.add_account(
         alice.pubkey(),
@@ -245,6 +291,7 @@ async fn test_errors() {
                     price: 10_000_000_001,
                 },
             ],
+            nft_gated_collection: None,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -277,6 +324,8 @@ async fn test_errors() {
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
             bonfida_fee_account: &bonfida_fee_account,
+            nft_account: None,
+            nft_metadata_account: None,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -300,6 +349,8 @@ async fn test_errors() {
     // - Unregister invalid sub
     // - Admin register with wrong authority
     // - Wrong bonfida fee account
+    // - Register with 0 NFT
+    // - Register with unverified collection
     ////////////////////////////////
 
     // Test: Non .sol domain for registry
@@ -320,6 +371,7 @@ async fn test_errors() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
+            nft_gated_collection: None,
             price_schedule: vec![
                 Price {
                     length: 1,
@@ -344,6 +396,7 @@ async fn test_errors() {
             registry: &registry_key,
         },
         edit_registry::Params {
+            new_collection: None,
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
@@ -431,6 +484,8 @@ async fn test_errors() {
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
             bonfida_fee_account: &bonfida_fee_account,
+            nft_account: None,
+            nft_metadata_account: None,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -457,6 +512,8 @@ async fn test_errors() {
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
             bonfida_fee_account: &bonfida_fee_account,
+            nft_account: None,
+            nft_metadata_account: None,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -527,6 +584,8 @@ async fn test_errors() {
                     sub_reverse_account: &sub_reverse_key,
                     fee_payer: &bob.pubkey(),
                     bonfida_fee_account: &bonfida_fee_account,
+                    nft_account: None,
+                    nft_metadata_account: None,
                 },
                 register::Params {
                     domain: format!("\0{}", sub_domain),
@@ -561,6 +620,8 @@ async fn test_errors() {
                 sub_reverse_account: &sub_reverse_key,
                 fee_payer: &bob.pubkey(),
                 bonfida_fee_account: &bonfida_fee_account,
+                nft_account: None,
+                nft_metadata_account: None,
             },
             register::Params { domain: sub_domain },
         )],
@@ -640,6 +701,8 @@ async fn test_errors() {
                 sub_reverse_account: &sub_reverse_key,
                 fee_payer: &bob.pubkey(),
                 bonfida_fee_account: &alice_fee_account,
+                nft_account: None,
+                nft_metadata_account: None,
             },
             register::Params {
                 domain: format!("\0{}", sub_domain),
@@ -649,4 +712,93 @@ async fn test_errors() {
     )
     .await;
     assert!(result.is_err());
+
+    ////////////////////////////////////////
+    //
+    // Test with NFT gated registrar
+    //
+    ////////////////////////////////////////
+
+    // First edit registrar to add nft collection
+    let ix = edit_registry(
+        edit_registry::Accounts {
+            system_program: &system_program::ID,
+            authority: &alice.pubkey(),
+            registry: &registry_key,
+        },
+        edit_registry::Params {
+            new_collection: Some(common::metadata::COLLECTION_KEY),
+            new_authority: None,
+            new_mint: None,
+            new_fee_account: None,
+            new_price_schedule: None,
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
+        .await
+        .unwrap();
+
+    // Test: Register with 0 NFT
+    let sub_domain = "some-test-22345".to_string();
+    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    // Bob registers a subdomain
+    let ix = register(
+        register::Accounts {
+            name_auctioning_program: &NAME_AUCTIONING,
+            system_program: &system_program::ID,
+            spl_token_program: &spl_token::ID,
+            spl_name_service: &spl_name_service::ID,
+            rent_sysvar: &sysvar::rent::id(),
+            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            fee_account: alice_fee_account,
+            fee_source: &bob_ata,
+            registry: &registry_key,
+            parent_domain_account: &name_key,
+            sub_domain_account: &sub_domain_key,
+            sub_reverse_account: &sub_reverse_key,
+            fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
+            nft_account: Some(&bob_nft_account_zero_amount),
+            nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
+        },
+        register::Params {
+            domain: format!("\0{}", sub_domain),
+        },
+    );
+    let res = sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob]).await;
+    assert!(res.is_err());
+
+    // Test: Register with unverified collection
+    let sub_domain = "some-t332325".to_string();
+    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    // Bob registers a subdomain
+    let ix = register(
+        register::Accounts {
+            name_auctioning_program: &NAME_AUCTIONING,
+            system_program: &system_program::ID,
+            spl_token_program: &spl_token::ID,
+            spl_name_service: &spl_name_service::ID,
+            rent_sysvar: &sysvar::rent::id(),
+            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            fee_account: alice_fee_account,
+            fee_source: &bob_ata,
+            registry: &registry_key,
+            parent_domain_account: &name_key,
+            sub_domain_account: &sub_domain_key,
+            sub_reverse_account: &sub_reverse_key,
+            fee_payer: &bob.pubkey(),
+            bonfida_fee_account: &bonfida_fee_account,
+            nft_account: Some(&bob_nft_account),
+            nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
+        },
+        register::Params {
+            domain: format!("\0{}", sub_domain),
+        },
+    );
+    let res = sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob]).await;
+    assert!(res.is_err());
 }

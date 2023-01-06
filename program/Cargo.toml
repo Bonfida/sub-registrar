@@ -24,6 +24,7 @@ spl-name-service = {git = "https://github.com/solana-labs/solana-program-library
 bytemuck = "1.12.3"
 unicode-segmentation = "1.9.0"
 name-auctioning = {git = "ssh://git@github.com/Bonfida/name-auctioning.git", features = ["no-entrypoint"]}
+mpl-token-metadata = "*"
 
 [dev-dependencies]
 hexdump = "0.1.0"
