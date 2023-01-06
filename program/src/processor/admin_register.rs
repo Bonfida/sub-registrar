@@ -57,16 +57,20 @@ pub struct Accounts<'a, T> {
     /// The reverse lookup class accoutn
     pub reverse_lookup_class: &'a T,
 
+    /// The registry account
     #[cons(writable)]
     pub registry: &'a T,
 
     #[cons(writable)]
+    /// The parent domain account
     pub parent_domain_account: &'a T,
 
     #[cons(writable)]
+    /// The subdomain account to create
     pub sub_domain_account: &'a T,
 
     #[cons(writable)]
+    /// The subdomain reverse account
     pub sub_reverse_account: &'a T,
 
     #[cons(writable, signer)]

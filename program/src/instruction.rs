@@ -11,8 +11,8 @@ use {
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum ProgramInstruction {
     /// Create registry
-    ///
-    ///
+    /// 
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -23,7 +23,7 @@ pub enum ProgramInstruction {
     /// | 5     | ❌        | ❌      | The SPL name service program ID      |
     CreateRegistry,
     /// Edit a registry
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ❌        | ❌      | The system program account |
@@ -31,7 +31,7 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ❌      | The registry to edit       |
     EditRegistry,
     /// Register a subdomain
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -48,19 +48,20 @@ pub enum ProgramInstruction {
     /// | 11    | ✅        | ❌      |                                      |
     /// | 12    | ✅        | ❌      |                                      |
     /// | 13    | ✅        | ✅      | The fee payer account                |
+    /// | 14    | ✅        | ❌      |                                      |
     Register,
     /// Unregister a subdomain
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
     /// | 1     | ❌        | ❌      | The SPL name service program account |
-    /// | 2     | ✅        | ❌      |                                      |
-    /// | 3     | ✅        | ❌      |                                      |
+    /// | 2     | ✅        | ❌      | The registry account                 |
+    /// | 3     | ✅        | ❌      | The subdomain account to unregister  |
     /// | 4     | ✅        | ✅      | The fee payer account                |
     Unregister,
     /// Close a registry account
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                              |
     /// | -------------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account               |
@@ -72,7 +73,7 @@ pub enum ProgramInstruction {
     /// | 6     | ❌        | ❌      | The SPL name service program ID          |
     CloseRegistry,
     /// Allow the authority of a `Registry` to register a subdomain without token transfer
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -82,10 +83,10 @@ pub enum ProgramInstruction {
     /// | 4     | ❌        | ❌      | The name auctioning program account  |
     /// | 5     | ❌        | ❌      | The .sol root domain                 |
     /// | 6     | ❌        | ❌      | The reverse lookup class accoutn     |
-    /// | 7     | ✅        | ❌      |                                      |
-    /// | 8     | ✅        | ❌      |                                      |
-    /// | 9     | ✅        | ❌      |                                      |
-    /// | 10    | ✅        | ❌      |                                      |
+    /// | 7     | ✅        | ❌      | The registry account                 |
+    /// | 8     | ✅        | ❌      | The parent domain account            |
+    /// | 9     | ✅        | ❌      | The subdomain account to create      |
+    /// | 10    | ✅        | ❌      | The subdomain reverse account        |
     /// | 11    | ✅        | ✅      | The fee payer account                |
     AdminRegister,
 }

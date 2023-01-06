@@ -35,9 +35,11 @@ pub struct Accounts<'a, T> {
     pub spl_name_service: &'a T,
 
     #[cons(writable)]
+    /// The registry account
     pub registry: &'a T,
 
     #[cons(writable)]
+    /// The subdomain account to unregister
     pub sub_domain_account: &'a T,
 
     #[cons(writable, signer)]
