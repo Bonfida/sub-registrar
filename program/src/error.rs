@@ -28,6 +28,10 @@ pub enum SubRegisterError {
     MustProvideNft,
     #[error("Must provide NFT metadata account")]
     MustProvideNftMetadata,
+    #[error("NFT must have a collection")]
+    MustHaveCollection,
+    #[error("Invalid collection")]
+    InvalidCollection,
 }
 
 impl From<SubRegisterError> for ProgramError {

@@ -33,6 +33,7 @@ pub struct Params {
     pub new_mint: Option<Pubkey>,
     pub new_fee_account: Option<Pubkey>,
     pub new_price_schedule: Option<Schedule>,
+    pub new_collection: Option<Pubkey>,
 }
 
 #[derive(InstructionsAccount)]
@@ -90,6 +91,10 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
 
     if let Some(new_fee_account) = params.new_fee_account {
         registry.fee_account = new_fee_account;
+    }
+
+    if let Some(new_collection) = params.new_collection {
+        registry.nft_gated_collection = Some(new_collection);
     }
 
     if let Some(mut new_price_schedule) = params.new_price_schedule {

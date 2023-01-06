@@ -49,6 +49,12 @@ impl PrintProgramError for SubRegisterError {
             SubRegisterError::MustProvideNftMetadata => {
                 msg!("[+] Error: Must provide NFT metadata account")
             }
+            SubRegisterError::MustHaveCollection => {
+                msg!("[+] Error: NFT must have a collection")
+            }
+            SubRegisterError::InvalidCollection => {
+                msg!("[+] Error: Invalid collection")
+            }
         }
     }
 }

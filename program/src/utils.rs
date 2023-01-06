@@ -3,6 +3,8 @@ use solana_program::{program_error::ProgramError, program_pack::Pack};
 use crate::{error::SubRegisterError, state::schedule::Schedule};
 
 use {
+    borsh::BorshDeserialize,
+    mpl_token_metadata::state::Metadata,
     solana_program::{account_info::AccountInfo, hash::hashv, pubkey::Pubkey},
     spl_name_service::state::{get_seeds_and_key, HASH_PREFIX},
     unicode_segmentation::UnicodeSegmentation,
@@ -48,10 +50,10 @@ pub fn get_subdomain_reverse(ui_subdomain: String, parent: &Pubkey) -> Pubkey {
 }
 
 // Assumes the account is owned by SPL Token !!!!
-pub fn check_nft_holding(
+pub fn check_nft_holding_and_get_mint(
     nft_account: &AccountInfo,
     expected_owner: &Pubkey,
-) -> Result<(), ProgramError> {
+) -> Result<Pubkey, ProgramError> {
     // Deserialize token account
     let token_acc = spl_token::state::Account::unpack(&nft_account.data.borrow())?;
 
@@ -59,13 +61,12 @@ pub fn check_nft_holding(
     if token_acc.owner != *expected_owner {
         return Err(SubRegisterError::WrongOwner.into());
     }
-
     // Check correct amount
     if token_acc.amount != 1 {
         return Err(SubRegisterError::MustHoldOneNFt.into());
     }
 
-    Ok(())
+    Ok(token_acc.mint)
 }
 
 // Assumes the account is owned by MPL token metadata !!!!
@@ -74,9 +75,22 @@ pub fn check_metadata(
     expected_collection: &Pubkey,
 ) -> Result<(), ProgramError> {
     // Deserialize metadata
-    // Check collection
-    // Check collection is verified
-    Ok(())
+    let metadata = Metadata::deserialize(&mut (&nft_metadata_account.data.borrow() as &[u8]))?;
+
+    if let Some(collection) = metadata.collection {
+        // Check collection is verified
+        if !collection.verified {
+            return Err(SubRegisterError::InvalidCollection.into());
+        }
+        // Check collection
+        if collection.key != *expected_collection {
+            return Err(SubRegisterError::InvalidCollection.into());
+        }
+
+        return Ok(());
+    }
+
+    Err(SubRegisterError::MustHaveCollection.into())
 }
 
 #[test]

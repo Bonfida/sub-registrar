@@ -6,6 +6,7 @@ use crate::{
         registry::Registry, Tag, FEE_ACC_OWNER, FEE_PCT, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT,
     },
     utils,
+    utils::{check_metadata, check_nft_holding_and_get_mint},
 };
 
 use {
@@ -14,6 +15,7 @@ use {
         BorshSize, InstructionsAccount,
     },
     borsh::{BorshDeserialize, BorshSerialize},
+    mpl_token_metadata::pda::find_metadata_account,
     name_auctioning::{instructions::create_reverse, processor::CENTRAL_STATE},
     solana_program::{
         account_info::{next_account_info, AccountInfo},
@@ -166,16 +168,19 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             .nft_account
             .ok_or(SubRegisterError::MustProvideNft)?;
         let nft_metadata_account = accounts
-            .nft_account
+            .nft_metadata_account
             .ok_or(SubRegisterError::MustProvideNftMetadata)?;
-        // Accounts checks
-        check_account_owner(nft_account, &spl_token::ID)?;
-        check_account_owner(nft_metadata_account, &spl_token::ID)?; // <- Should be MPL
-        // Check metadata PDA deriation
 
-        // TODO
-        // check_nft_holding()?;
-        // check_metadata()?;
+        // Accounts checks
+        check_account_owner(nft_account, &spl_token::ID).unwrap();
+        check_account_owner(nft_metadata_account, &mpl_token_metadata::ID).unwrap();
+
+        let mint = check_nft_holding_and_get_mint(nft_account, accounts.fee_payer.key)?;
+        check_metadata(nft_metadata_account, &collection)?;
+
+        // Check metadata PDA deriation
+        let (pda, _) = find_metadata_account(&mint);
+        check_account_key(nft_metadata_account, &pda)?;
     }
 
     // Check sub account derivation
