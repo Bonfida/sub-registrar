@@ -52,8 +52,7 @@ async fn test_errors() {
     let mut data: Vec<u8> = vec![];
     let mut metadata = common::metadata::get_metadata();
     metadata.collection.as_mut().unwrap().verified = false;
-    metadata.serialize(&mut data)
-        .unwrap();
+    metadata.serialize(&mut data).unwrap();
     program_test.add_account(
         common::metadata::NFT_METADATA_KEY,
         Account {

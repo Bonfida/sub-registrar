@@ -85,7 +85,8 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut registrar = Registrar::from_account_info(accounts.registrar, crate::state::Tag::Registrar)?;
+    let mut registrar =
+        Registrar::from_account_info(accounts.registrar, crate::state::Tag::Registrar)?;
 
     // Checks
     check_account_key(accounts.registry_authority, &registrar.authority)?;

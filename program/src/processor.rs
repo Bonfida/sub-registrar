@@ -35,7 +35,7 @@ impl Processor {
                 msg!("[+] Instruction: Create registrar Instruction");
                 let params = create_registrar::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
-                    create_registrar::process(program_id, accounts, params)?;
+                create_registrar::process(program_id, accounts, params)?;
             }
             ProgramInstruction::EditRegistrar => {
                 msg!("[+] Instruction: Edit registrar Instruction");

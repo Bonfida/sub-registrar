@@ -157,9 +157,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
 
     // Create sub
     let space: u32 = 1_000;
-    let lamports = Rent::get()
-        .unwrap()
-        .minimum_balance(space as usize + NameRecordHeader::LEN);
+    let lamports = Rent::get()?.minimum_balance(space as usize + NameRecordHeader::LEN);
     let ix = spl_name_service::instruction::create(
         spl_name_service::ID,
         spl_name_service::instruction::NameRegistryInstruction::Create {
