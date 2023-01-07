@@ -9,7 +9,7 @@ use {
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize, PartialEq, Debug, Eq)]
-pub struct Registry {
+pub struct Registrar {
     pub tag: super::Tag,
     pub nonce: u8,
     pub authority: Pubkey,
@@ -21,8 +21,8 @@ pub struct Registry {
     pub nft_gated_collection: Option<Pubkey>,
 }
 
-impl Registry {
-    pub const SEEDS: &'static [u8; 8] = b"registry";
+impl Registrar {
+    pub const SEEDS: &'static [u8; 9] = b"registrar";
 
     pub fn new(
         authority: &Pubkey,
@@ -34,7 +34,7 @@ impl Registry {
         nft_gated_collection: Option<Pubkey>,
     ) -> Self {
         Self {
-            tag: super::Tag::Registry,
+            tag: super::Tag::Registrar,
             nonce,
             authority: *authority,
             fee_account: *fee_account,
@@ -53,7 +53,7 @@ impl Registry {
     ) -> (Pubkey, u8) {
         Pubkey::find_program_address(
             &[
-                Registry::SEEDS,
+                Registrar::SEEDS,
                 &domain_account.to_bytes(),
                 &authority.to_bytes(),
             ],
@@ -65,12 +65,12 @@ impl Registry {
         self.serialize(&mut dst).unwrap()
     }
 
-    pub fn from_account_info(a: &AccountInfo, tag: super::Tag) -> Result<Registry, ProgramError> {
+    pub fn from_account_info(a: &AccountInfo, tag: super::Tag) -> Result<Registrar, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
         if data[0] != tag as u8 && data[0] != super::Tag::Uninitialized as u8 {
             return Err(SubRegisterError::DataTypeMismatch.into());
         }
-        let result = Registry::deserialize(&mut data)?;
+        let result = Registrar::deserialize(&mut data)?;
         Ok(result)
     }
 }

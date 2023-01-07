@@ -3,7 +3,7 @@
 use crate::{
     error::SubRegisterError,
     state::{
-        registry::Registry, Tag, FEE_ACC_OWNER, FEE_PCT, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT,
+        registry::Registrar, Tag, FEE_ACC_OWNER, FEE_PCT, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT,
     },
     utils,
     utils::{check_metadata, check_nft_holding_and_get_mint},
@@ -71,7 +71,7 @@ pub struct Accounts<'a, T> {
     pub fee_source: &'a T,
 
     #[cons(writable)]
-    pub registry: &'a T,
+    pub registrar: &'a T,
 
     #[cons(writable)]
     pub parent_domain_account: &'a T,
@@ -109,7 +109,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             reverse_lookup_class: next_account_info(accounts_iter)?,
             fee_account: next_account_info(accounts_iter)?,
             fee_source: next_account_info(accounts_iter)?,
-            registry: next_account_info(accounts_iter)?,
+            registrar: next_account_info(accounts_iter)?,
             parent_domain_account: next_account_info(accounts_iter)?,
             sub_domain_account: next_account_info(accounts_iter)?,
             sub_reverse_account: next_account_info(accounts_iter)?,
@@ -131,7 +131,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         // Check owners
         check_account_owner(accounts.fee_account, &spl_token::ID)?;
         check_account_owner(accounts.fee_source, &spl_token::ID)?;
-        check_account_owner(accounts.registry, program_id)?;
+        check_account_owner(accounts.registrar, program_id)?;
         check_account_owner(accounts.parent_domain_account, &spl_name_service::ID)?;
         check_account_owner(accounts.sub_domain_account, &system_program::ID)?;
         check_account_owner(accounts.sub_reverse_account, &system_program::ID).or_else(|_| {
@@ -148,10 +148,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut registry = Registry::from_account_info(accounts.registry, Tag::Registry)?;
+    let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
-    check_account_key(accounts.fee_account, &registry.fee_account)?;
-    check_account_key(accounts.parent_domain_account, &registry.domain_account)?;
+    check_account_key(accounts.fee_account, &registrar.fee_account)?;
+    check_account_key(accounts.parent_domain_account, &registrar.domain_account)?;
     check_token_account_owner(accounts.bonfida_fee_account, &FEE_ACC_OWNER)?;
 
     if !params.domain.starts_with('\0') {
@@ -163,7 +163,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Handle NFT gated case firts
-    if let Some(collection) = registry.nft_gated_collection {
+    if let Some(collection) = registrar.nft_gated_collection {
         let nft_account = accounts
             .nft_account
             .ok_or(SubRegisterError::MustProvideNft)?;
@@ -196,12 +196,12 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         &spl_name_service::ID,
         hashed_name.clone(),
         None,
-        Some(&registry.domain_account),
+        Some(&registrar.domain_account),
     );
     check_account_key(accounts.sub_domain_account, &name_account_key)?;
 
     // Transfer fees
-    let price = utils::get_domain_price(params.domain.clone(), &registry.price_schedule);
+    let price = utils::get_domain_price(params.domain.clone(), &registrar.price_schedule);
     let fees = (price
         .checked_mul(FEE_PCT)
         .ok_or(SubRegisterError::Overflow)?)
@@ -258,15 +258,15 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         *accounts.fee_payer.key,
         *accounts.fee_payer.key,
         None,
-        Some(registry.domain_account),
-        Some(*accounts.registry.key),
+        Some(registrar.domain_account),
+        Some(*accounts.registrar.key),
     )?;
 
     let seeds: &[&[u8]] = &[
-        Registry::SEEDS,
-        &registry.domain_account.to_bytes(),
-        &registry.authority.to_bytes(),
-        &[registry.nonce],
+        Registrar::SEEDS,
+        &registrar.domain_account.to_bytes(),
+        &registrar.authority.to_bytes(),
+        &[registrar.nonce],
     ];
     invoke_signed(
         &ix,
@@ -277,7 +277,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             accounts.sub_domain_account.clone(),
             accounts.fee_payer.clone(),
             accounts.parent_domain_account.clone(),
-            accounts.registry.clone(),
+            accounts.registrar.clone(),
         ],
         &[seeds],
     )?;
@@ -291,8 +291,8 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             name_auctioning::processor::CENTRAL_STATE,
             *accounts.fee_payer.key,
             params.domain,
-            Some(registry.domain_account),
-            Some(*accounts.registry.key),
+            Some(registrar.domain_account),
+            Some(*accounts.registrar.key),
         );
         invoke_signed(
             &ix,
@@ -306,20 +306,20 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
                 accounts.reverse_lookup_class.clone(),
                 accounts.fee_payer.clone(),
                 accounts.parent_domain_account.clone(),
-                accounts.registry.clone(),
+                accounts.registrar.clone(),
             ],
             &[seeds],
         )?;
     }
 
     // Increment nb sub created
-    registry.total_sub_created = registry
+    registrar.total_sub_created = registrar
         .total_sub_created
         .checked_add(1)
         .ok_or(SubRegisterError::Overflow)?;
 
     // Serialize state
-    registry.save(&mut accounts.registry.data.borrow_mut());
+    registrar.save(&mut accounts.registrar.data.borrow_mut());
 
     Ok(())
 }

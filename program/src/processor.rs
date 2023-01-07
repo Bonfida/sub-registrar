@@ -10,9 +10,9 @@ use {
 use crate::instruction::ProgramInstruction;
 
 pub mod admin_register;
-pub mod close_registry;
-pub mod create_registry;
-pub mod edit_registry;
+pub mod close_registrar;
+pub mod create_registrar;
+pub mod edit_registrar;
 pub mod register;
 pub mod unregister;
 
@@ -31,17 +31,17 @@ impl Processor {
         msg!("Instruction unpacked");
 
         match instruction {
-            ProgramInstruction::CreateRegistry => {
-                msg!("[+] Instruction: Create registry Instruction");
-                let params = create_registry::Params::try_from_slice(instruction_data)
+            ProgramInstruction::CreateRegistrar => {
+                msg!("[+] Instruction: Create registrar Instruction");
+                let params = create_registrar::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
-                create_registry::process(program_id, accounts, params)?;
+                    create_registrar::process(program_id, accounts, params)?;
             }
-            ProgramInstruction::EditRegistry => {
-                msg!("[+] Instruction: Edit registry Instruction");
-                let params = edit_registry::Params::try_from_slice(instruction_data)
+            ProgramInstruction::EditRegistrar => {
+                msg!("[+] Instruction: Edit registrar Instruction");
+                let params = edit_registrar::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
-                edit_registry::process(program_id, accounts, params)?;
+                edit_registrar::process(program_id, accounts, params)?;
             }
             ProgramInstruction::Register => {
                 msg!("[+] Instruction: Register Instruction");
@@ -55,11 +55,11 @@ impl Processor {
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 unregister::process(program_id, accounts, params)?;
             }
-            ProgramInstruction::CloseRegistry => {
-                msg!("[+] Instruction: Close registry Instruction");
-                let params = close_registry::Params::try_from_slice(instruction_data)
+            ProgramInstruction::CloseRegistrar => {
+                msg!("[+] Instruction: Close registrar Instruction");
+                let params = close_registrar::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
-                close_registry::process(program_id, accounts, params)?;
+                close_registrar::process(program_id, accounts, params)?;
             }
             ProgramInstruction::AdminRegister => {
                 msg!("[+] Instruction: Admin register Instruction");

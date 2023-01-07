@@ -2,7 +2,7 @@
 
 use crate::{
     error::SubRegisterError,
-    state::{registry::Registry, Tag},
+    state::{registry::Registrar, Tag},
 };
 
 use {
@@ -35,8 +35,8 @@ pub struct Accounts<'a, T> {
     pub spl_name_service: &'a T,
 
     #[cons(writable)]
-    /// The registry account
-    pub registry: &'a T,
+    /// The registrar account
+    pub registrar: &'a T,
 
     #[cons(writable)]
     /// The subdomain account to unregister
@@ -56,7 +56,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             system_program: next_account_info(accounts_iter)?,
             spl_name_service: next_account_info(accounts_iter)?,
-            registry: next_account_info(accounts_iter)?,
+            registrar: next_account_info(accounts_iter)?,
             sub_domain_account: next_account_info(accounts_iter)?,
             domain_owner: next_account_info(accounts_iter)?,
         };
@@ -66,7 +66,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(accounts.spl_name_service, &spl_name_service::ID)?;
 
         // Check owners
-        check_account_owner(accounts.registry, program_id)?;
+        check_account_owner(accounts.registrar, program_id)?;
         check_account_owner(accounts.sub_domain_account, &spl_name_service::ID)?;
 
         // Check signer
@@ -78,11 +78,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut registry = Registry::from_account_info(accounts.registry, Tag::Registry)?;
+    let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
     // Check
     let record = NameRecordHeader::unpack_from_slice(&accounts.sub_domain_account.data.borrow())?;
-    if record.parent_name != registry.domain_account {
+    if record.parent_name != registrar.domain_account {
         return Err(SubRegisterError::InvalidSubdomain.into());
     }
 
@@ -104,13 +104,13 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
     )?;
 
     // Increment nb sub created
-    registry.total_sub_created = registry
+    registrar.total_sub_created = registrar
         .total_sub_created
         .checked_sub(1)
         .ok_or(SubRegisterError::Overflow)?;
 
     // Serialize state
-    registry.save(&mut accounts.registry.data.borrow_mut());
+    registrar.save(&mut accounts.registrar.data.borrow_mut());
 
     Ok(())
 }

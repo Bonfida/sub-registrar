@@ -1,5 +1,5 @@
 pub use crate::processor::{
-    admin_register, close_registry, create_registry, edit_registry, register, unregister,
+    admin_register, close_registrar, create_registrar, edit_registrar, register, unregister,
 };
 use {
     bonfida_utils::InstructionsAccount,
@@ -10,28 +10,27 @@ use {
 #[allow(missing_docs)]
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum ProgramInstruction {
-    /// Create registry
-    ///
-    ///
+    /// Create registrar
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
-    /// | 1     | ✅        | ❌      | The registry account                 |
+    /// | 1     | ✅        | ❌      | The registrar account                |
     /// | 2     | ✅        | ❌      | The domain account                   |
     /// | 3     | ✅        | ✅      | The owner of the domain name account |
     /// | 4     | ✅        | ✅      | The fee payer account                |
     /// | 5     | ❌        | ❌      | The SPL name service program ID      |
-    CreateRegistry,
-    /// Edit a registry
-    ///
+    CreateRegistrar,
+    /// Edit a registrar
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ❌        | ❌      | The system program account |
     /// | 1     | ✅        | ✅      | The fee payer account      |
     /// | 2     | ✅        | ❌      | The registry to edit       |
-    EditRegistry,
+    EditRegistrar,
     /// Register a subdomain
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -49,31 +48,33 @@ pub enum ProgramInstruction {
     /// | 12    | ✅        | ❌      |                                      |
     /// | 13    | ✅        | ✅      | The fee payer account                |
     /// | 14    | ✅        | ❌      |                                      |
+    /// | 15    | ❌        | ❌      |                                      |
+    /// | 16    | ❌        | ❌      |                                      |
     Register,
     /// Unregister a subdomain
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
     /// | 1     | ❌        | ❌      | The SPL name service program account |
-    /// | 2     | ✅        | ❌      | The registry account                 |
+    /// | 2     | ✅        | ❌      | The registrar account                |
     /// | 3     | ✅        | ❌      | The subdomain account to unregister  |
     /// | 4     | ✅        | ✅      | The fee payer account                |
     Unregister,
-    /// Close a registry account
-    ///
+    /// Close a registrar account
+    /// 
     /// | Index | Writable | Signer | Description                              |
     /// | -------------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account               |
-    /// | 1     | ✅        | ❌      | The registry account                     |
+    /// | 1     | ✅        | ❌      | The registrar account                    |
     /// | 2     | ✅        | ❌      | The domain account                       |
     /// | 3     | ❌        | ❌      | The new owner of the domain name account |
     /// | 4     | ✅        | ❌      | The lamports target                      |
     /// | 5     | ✅        | ✅      | The authority of the registry            |
     /// | 6     | ❌        | ❌      | The SPL name service program ID          |
-    CloseRegistry,
-    /// Allow the authority of a `Registry` to register a subdomain without token transfer
-    ///
+    CloseRegistrar,
+    /// Allow the authority of a `Registrar` to register a subdomain without token transfer
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -83,24 +84,24 @@ pub enum ProgramInstruction {
     /// | 4     | ❌        | ❌      | The name auctioning program account  |
     /// | 5     | ❌        | ❌      | The .sol root domain                 |
     /// | 6     | ❌        | ❌      | The reverse lookup class accoutn     |
-    /// | 7     | ✅        | ❌      | The registry account                 |
+    /// | 7     | ✅        | ❌      | The registrar account                |
     /// | 8     | ✅        | ❌      | The parent domain account            |
     /// | 9     | ✅        | ❌      | The subdomain account to create      |
     /// | 10    | ✅        | ❌      | The subdomain reverse account        |
     /// | 11    | ✅        | ✅      | The fee payer account                |
     AdminRegister,
 }
-pub fn create_registry(
-    accounts: create_registry::Accounts<Pubkey>,
-    params: create_registry::Params,
+pub fn create_registrar(
+    accounts: create_registrar::Accounts<Pubkey>,
+    params: create_registrar::Params,
 ) -> Instruction {
-    accounts.get_instruction(crate::ID, ProgramInstruction::CreateRegistry as u8, params)
+    accounts.get_instruction(crate::ID, ProgramInstruction::CreateRegistrar as u8, params)
 }
-pub fn edit_registry(
-    accounts: edit_registry::Accounts<Pubkey>,
-    params: edit_registry::Params,
+pub fn edit_registrar(
+    accounts: edit_registrar::Accounts<Pubkey>,
+    params: edit_registrar::Params,
 ) -> Instruction {
-    accounts.get_instruction(crate::ID, ProgramInstruction::EditRegistry as u8, params)
+    accounts.get_instruction(crate::ID, ProgramInstruction::EditRegistrar as u8, params)
 }
 pub fn register(accounts: register::Accounts<Pubkey>, params: register::Params) -> Instruction {
     accounts.get_instruction(crate::ID, ProgramInstruction::Register as u8, params)
@@ -111,11 +112,11 @@ pub fn unregister(
 ) -> Instruction {
     accounts.get_instruction(crate::ID, ProgramInstruction::Unregister as u8, params)
 }
-pub fn close_registry(
-    accounts: close_registry::Accounts<Pubkey>,
-    params: close_registry::Params,
+pub fn close_registrar(
+    accounts: close_registrar::Accounts<Pubkey>,
+    params: close_registrar::Params,
 ) -> Instruction {
-    accounts.get_instruction(crate::ID, ProgramInstruction::CloseRegistry as u8, params)
+    accounts.get_instruction(crate::ID, ProgramInstruction::CloseRegistrar as u8, params)
 }
 pub fn admin_register(
     accounts: admin_register::Accounts<Pubkey>,

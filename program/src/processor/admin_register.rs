@@ -1,8 +1,8 @@
-//! Allow the authority of a `Registry` to register a subdomain without token transfer
+//! Allow the authority of a `Registrar` to register a subdomain without token transfer
 
 use crate::{
     error::SubRegisterError,
-    state::{registry::Registry, Tag, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT},
+    state::{registry::Registrar, Tag, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT},
 };
 
 use {
@@ -57,9 +57,9 @@ pub struct Accounts<'a, T> {
     /// The reverse lookup class accoutn
     pub reverse_lookup_class: &'a T,
 
-    /// The registry account
+    /// The registrar account
     #[cons(writable)]
-    pub registry: &'a T,
+    pub registrar: &'a T,
 
     #[cons(writable)]
     /// The parent domain account
@@ -92,7 +92,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             name_auctioning_program: next_account_info(accounts_iter)?,
             root_domain: next_account_info(accounts_iter)?,
             reverse_lookup_class: next_account_info(accounts_iter)?,
-            registry: next_account_info(accounts_iter)?,
+            registrar: next_account_info(accounts_iter)?,
             parent_domain_account: next_account_info(accounts_iter)?,
             sub_domain_account: next_account_info(accounts_iter)?,
             sub_reverse_account: next_account_info(accounts_iter)?,
@@ -109,7 +109,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(accounts.reverse_lookup_class, &CENTRAL_STATE)?;
 
         // Check owners
-        check_account_owner(accounts.registry, program_id)?;
+        check_account_owner(accounts.registrar, program_id)?;
         check_account_owner(accounts.parent_domain_account, &spl_name_service::ID)?;
         check_account_owner(accounts.sub_domain_account, &system_program::ID)?;
         check_account_owner(accounts.sub_reverse_account, &system_program::ID).or_else(|_| {
@@ -125,10 +125,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut registry = Registry::from_account_info(accounts.registry, Tag::Registry)?;
+    let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
-    check_account_key(accounts.authority, &registry.authority)?;
-    check_account_key(accounts.parent_domain_account, &registry.domain_account)?;
+    check_account_key(accounts.authority, &registrar.authority)?;
+    check_account_key(accounts.parent_domain_account, &registrar.domain_account)?;
 
     if !params.domain.starts_with('\0') {
         return Err(SubRegisterError::InvalidSubdomain.into());
@@ -151,7 +151,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         &spl_name_service::ID,
         hashed_name.clone(),
         None,
-        Some(&registry.domain_account),
+        Some(&registrar.domain_account),
     );
     check_account_key(accounts.sub_domain_account, &name_account_key)?;
 
@@ -171,15 +171,15 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         *accounts.authority.key,
         *accounts.authority.key,
         None,
-        Some(registry.domain_account),
-        Some(*accounts.registry.key),
+        Some(registrar.domain_account),
+        Some(*accounts.registrar.key),
     )?;
 
     let seeds: &[&[u8]] = &[
-        Registry::SEEDS,
-        &registry.domain_account.to_bytes(),
-        &registry.authority.to_bytes(),
-        &[registry.nonce],
+        Registrar::SEEDS,
+        &registrar.domain_account.to_bytes(),
+        &registrar.authority.to_bytes(),
+        &[registrar.nonce],
     ];
     invoke_signed(
         &ix,
@@ -190,7 +190,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             accounts.sub_domain_account.clone(),
             accounts.authority.clone(),
             accounts.parent_domain_account.clone(),
-            accounts.registry.clone(),
+            accounts.registrar.clone(),
         ],
         &[seeds],
     )?;
@@ -204,8 +204,8 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             name_auctioning::processor::CENTRAL_STATE,
             *accounts.authority.key,
             params.domain,
-            Some(registry.domain_account),
-            Some(*accounts.registry.key),
+            Some(registrar.domain_account),
+            Some(*accounts.registrar.key),
         );
         invoke_signed(
             &ix,
@@ -219,20 +219,20 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
                 accounts.reverse_lookup_class.clone(),
                 accounts.authority.clone(),
                 accounts.parent_domain_account.clone(),
-                accounts.registry.clone(),
+                accounts.registrar.clone(),
             ],
             &[seeds],
         )?;
     }
 
     // Increment nb sub created
-    registry.total_sub_created = registry
+    registrar.total_sub_created = registrar
         .total_sub_created
         .checked_add(1)
         .ok_or(SubRegisterError::Overflow)?;
 
     // Serialize state
-    registry.save(&mut accounts.registry.data.borrow_mut());
+    registrar.save(&mut accounts.registrar.data.borrow_mut());
 
     Ok(())
 }

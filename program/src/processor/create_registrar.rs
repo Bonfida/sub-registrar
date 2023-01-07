@@ -1,9 +1,9 @@
-//! Create registry
-//!
+//! Create registrar
+
 use crate::{
     cpi::Cpi,
     error::SubRegisterError,
-    state::{registry::Registry, schedule::Schedule, ROOT_DOMAIN_ACCOUNT},
+    state::{registry::Registrar, schedule::Schedule, ROOT_DOMAIN_ACCOUNT},
 };
 
 use {
@@ -41,8 +41,8 @@ pub struct Accounts<'a, T> {
     pub system_program: &'a T,
 
     #[cons(writable)]
-    /// The registry account
-    pub registry: &'a T,
+    /// The registrar account
+    pub registrar: &'a T,
 
     #[cons(writable)]
     /// The domain account
@@ -68,7 +68,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             system_program: next_account_info(accounts_iter)?,
-            registry: next_account_info(accounts_iter)?,
+            registrar: next_account_info(accounts_iter)?,
             domain_name_account: next_account_info(accounts_iter)?,
             domain_owner: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
@@ -80,7 +80,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(accounts.spl_name_program_id, &spl_name_service::ID)?;
 
         // Check owners
-        check_account_owner(accounts.registry, &system_program::ID)?;
+        check_account_owner(accounts.registrar, &system_program::ID)?;
         check_account_owner(accounts.domain_name_account, &spl_name_service::ID)?;
 
         // Check signer
@@ -93,12 +93,12 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], mut params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let (registry_key, nonce) = Registry::find_key(
+    let (registrar_key, nonce) = Registrar::find_key(
         accounts.domain_name_account.key,
         &params.authority,
         program_id,
     );
-    check_account_key(accounts.registry, &registry_key)?;
+    check_account_key(accounts.registrar, &registrar_key)?;
 
     // Checks
     let name_header =
@@ -111,12 +111,12 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], mut params: Params
 
     // Create Registry account
     let seeds: &[&[u8]] = &[
-        Registry::SEEDS,
+        Registrar::SEEDS,
         &accounts.domain_name_account.key.to_bytes(),
         &params.authority.to_bytes(),
         &[nonce],
     ];
-    let registry = Registry::new(
+    let registry = Registrar::new(
         &params.authority,
         &params.fee_account,
         &params.mint,
@@ -129,16 +129,16 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], mut params: Params
         program_id,
         accounts.system_program,
         accounts.fee_payer,
-        accounts.registry,
+        accounts.registrar,
         seeds,
         registry.borsh_len(),
     )?;
-    registry.save(&mut accounts.registry.data.borrow_mut());
+    registry.save(&mut accounts.registrar.data.borrow_mut());
 
     // Transfer domain to registry
     let ix = spl_name_service::instruction::transfer(
         spl_name_service::ID,
-        registry_key,
+        registrar_key,
         *accounts.domain_name_account.key,
         *accounts.domain_owner.key,
         None,

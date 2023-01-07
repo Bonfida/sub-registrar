@@ -2,9 +2,9 @@ use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
     instruction::{
-        admin_register, close_registry, create_registry, edit_registry, register, unregister,
+        admin_register, close_registrar, create_registrar, edit_registrar, register, unregister,
     },
-    state::{registry::Registry, schedule::Price, FEE_ACC_OWNER, NAME_AUCTIONING},
+    state::{registry::Registrar, schedule::Price, FEE_ACC_OWNER, NAME_AUCTIONING},
 };
 use {
     borsh::BorshSerialize,
@@ -191,19 +191,19 @@ async fn test_functional() {
     let bonfida_fee_account = &get_associated_token_address(&FEE_ACC_OWNER, &mint);
 
     // Alice creates registry
-    let (registry_key, _) = Registry::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
+    let (registry_key, _) = Registrar::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
     println!("[+] Registry key {}", registry_key);
 
-    let ix = create_registry(
-        create_registry::Accounts {
+    let ix = create_registrar(
+        create_registrar::Accounts {
             system_program: &system_program::ID,
-            registry: &registry_key,
+            registrar: &registry_key,
             domain_name_account: &name_key,
             domain_owner: &alice.pubkey(),
             fee_payer: &prg_test_ctx.payer.pubkey(),
             spl_name_program_id: &spl_name_service::ID,
         },
-        create_registry::Params {
+        create_registrar::Params {
             mint,
             fee_account: *alice_fee_account,
             nft_gated_collection: None,
@@ -225,13 +225,13 @@ async fn test_functional() {
         .unwrap();
 
     // Increase vec size
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -257,13 +257,13 @@ async fn test_functional() {
         .unwrap();
 
     // Decrease vec size
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -300,7 +300,7 @@ async fn test_functional() {
             reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
-            registry: &registry_key,
+            registrar: &registry_key,
             parent_domain_account: &name_key,
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
@@ -320,7 +320,7 @@ async fn test_functional() {
         unregister::Accounts {
             system_program: &system_program::ID,
             spl_name_service: &spl_name_service::ID,
-            registry: &registry_key,
+            registrar: &registry_key,
             sub_domain_account: &sub_domain_key,
             domain_owner: &bob.pubkey(),
         },
@@ -346,7 +346,7 @@ async fn test_functional() {
             reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
-            registry: &registry_key,
+            registrar: &registry_key,
             parent_domain_account: &name_key,
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
@@ -377,7 +377,7 @@ async fn test_functional() {
             rent_sysvar: &sysvar::rent::id(),
             root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
             reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
-            registry: &registry_key,
+            registrar: &registry_key,
             parent_domain_account: &name_key,
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
@@ -398,7 +398,7 @@ async fn test_functional() {
             unregister::Accounts {
                 system_program: &system_program::ID,
                 spl_name_service: &spl_name_service::ID,
-                registry: &registry_key,
+                registrar: &registry_key,
                 sub_domain_account: &sub_domain_key_to_unreg_2,
                 domain_owner: &alice.pubkey(),
             },
@@ -414,7 +414,7 @@ async fn test_functional() {
             unregister::Accounts {
                 system_program: &system_program::ID,
                 spl_name_service: &spl_name_service::ID,
-                registry: &registry_key,
+                registrar: &registry_key,
                 sub_domain_account: &sub_domain_key_to_unreg_1,
                 domain_owner: &bob.pubkey(),
             },
@@ -426,17 +426,17 @@ async fn test_functional() {
     .unwrap();
 
     // Close registry
-    let ix = close_registry(
-        close_registry::Accounts {
+    let ix = close_registrar(
+        close_registrar::Accounts {
             system_program: &system_program::ID,
-            registry: &registry_key,
+            registrar: &registry_key,
             domain_name_account: &name_key,
             new_domain_owner: &alice.pubkey(),
             lamports_target: &mint_authority.pubkey(),
             registry_authority: &alice.pubkey(),
             spl_name_program_id: &spl_name_service::ID,
         },
-        close_registry::Params {},
+        close_registrar::Params {},
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
         .await
@@ -449,16 +449,16 @@ async fn test_functional() {
     ////////////////////////////////////////
 
     // Test: create a registrar with nft collection
-    let ix = create_registry(
-        create_registry::Accounts {
+    let ix = create_registrar(
+        create_registrar::Accounts {
             system_program: &system_program::ID,
-            registry: &registry_key,
+            registrar: &registry_key,
             domain_name_account: &name_key,
             domain_owner: &alice.pubkey(),
             fee_payer: &prg_test_ctx.payer.pubkey(),
             spl_name_program_id: &spl_name_service::ID,
         },
-        create_registry::Params {
+        create_registrar::Params {
             nft_gated_collection: Some(common::metadata::COLLECTION_KEY),
             mint,
             fee_account: *alice_fee_account,
@@ -495,7 +495,7 @@ async fn test_functional() {
             reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
-            registry: &registry_key,
+            registrar: &registry_key,
             parent_domain_account: &name_key,
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,

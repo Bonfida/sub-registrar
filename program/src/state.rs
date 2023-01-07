@@ -20,6 +20,6 @@ pub const FEE_ACC_OWNER: Pubkey = pubkey!("G9tP6ZonwNj2qTdPpCrTsrCQgDovppxjCddfi
 #[allow(missing_docs)]
 pub enum Tag {
     Uninitialized,
-    Registry,
-    ClosedRegistry,
+    Registrar,
+    ClosedRegistrar,
 }

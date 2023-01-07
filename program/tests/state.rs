@@ -4,9 +4,9 @@ use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
     instruction::{
-        admin_register, close_registry, create_registry, edit_registry, register, unregister,
+        admin_register, close_registrar, create_registrar, edit_registrar, register, unregister,
     },
-    state::{registry::Registry, schedule::Price, Tag, FEE_ACC_OWNER, NAME_AUCTIONING},
+    state::{registry::Registrar, schedule::Price, Tag, FEE_ACC_OWNER, NAME_AUCTIONING},
     utils::get_subdomain_key,
 };
 
@@ -195,19 +195,19 @@ async fn test_state() {
     let bonfida_fee_account = &get_associated_token_address(&FEE_ACC_OWNER, &mint);
 
     // Alice creates registry
-    let (registry_key, nonce) = Registry::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
+    let (registry_key, nonce) = Registrar::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
     println!("[+] Registry key {}", registry_key);
 
-    let ix = create_registry(
-        create_registry::Accounts {
+    let ix = create_registrar(
+        create_registrar::Accounts {
             system_program: &system_program::ID,
-            registry: &registry_key,
+            registrar: &registry_key,
             domain_name_account: &name_key,
             domain_owner: &alice.pubkey(),
             fee_payer: &prg_test_ctx.payer.pubkey(),
             spl_name_program_id: &spl_name_service::ID,
         },
-        create_registry::Params {
+        create_registrar::Params {
             nft_gated_collection: None,
             mint,
             fee_account: *alice_fee_account,
@@ -235,10 +235,10 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    let mut expected_registry = Registry {
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    let mut expected_registrar = Registrar {
         nft_gated_collection: None,
-        tag: Tag::Registry,
+        tag: Tag::Registrar,
         nonce,
         authority: alice.pubkey(),
         fee_account: *alice_fee_account,
@@ -256,16 +256,16 @@ async fn test_state() {
             },
         ],
     };
-    assert_eq!(registry, expected_registry);
+    assert_eq!(registrar, expected_registrar);
 
     // Increase vec size
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -296,8 +296,8 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.price_schedule = vec![
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.price_schedule = vec![
         Price {
             length: 1,
             price: 10_000_000,
@@ -311,16 +311,16 @@ async fn test_state() {
             price: 5_000_000,
         },
     ];
-    assert_eq!(registry, expected_registry);
+    assert_eq!(registrar, expected_registrar);
 
     // Decrease vec size
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -347,8 +347,8 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.price_schedule = vec![
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.price_schedule = vec![
         Price {
             length: 1,
             price: 10_000_000,
@@ -358,17 +358,17 @@ async fn test_state() {
             price: 8_000_000,
         },
     ];
-    assert_eq!(registry, expected_registry);
+    assert_eq!(registrar, expected_registrar);
 
     // Change mint
     let new_mint = Pubkey::new_unique();
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: None,
             new_mint: Some(new_mint),
@@ -386,18 +386,18 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.mint = new_mint;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.mint = new_mint;
+    assert_eq!(registrar, expected_registrar);
 
     // Change mint back so we don't have to create a new token
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: None,
             new_mint: Some(mint),
@@ -415,19 +415,19 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.mint = mint;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.mint = mint;
+    assert_eq!(registrar, expected_registrar);
 
     // Change fee account
     let new_fee_account = Pubkey::new_unique();
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -445,17 +445,17 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.fee_account = new_fee_account;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.fee_account = new_fee_account;
+    assert_eq!(registrar, expected_registrar);
     // Change it back
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -473,19 +473,19 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.fee_account = *alice_fee_account;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.fee_account = *alice_fee_account;
+    assert_eq!(registrar, expected_registrar);
 
     // Change authority
     let new_authority = Keypair::new();
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_authority: Some(new_authority.pubkey()),
             new_mint: None,
             new_fee_account: None,
@@ -503,18 +503,18 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.authority = new_authority.pubkey();
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.authority = new_authority.pubkey();
+    assert_eq!(registrar, expected_registrar);
 
     // Change authority back to alice
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &new_authority.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: Some(alice.pubkey()),
             new_mint: None,
@@ -532,9 +532,9 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.authority = alice.pubkey();
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.authority = alice.pubkey();
+    assert_eq!(registrar, expected_registrar);
 
     let sub_domain = "some-test".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
@@ -552,7 +552,7 @@ async fn test_state() {
             reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
-            registry: &registry_key,
+            registrar: &registry_key,
             parent_domain_account: &name_key,
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
@@ -576,15 +576,15 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.total_sub_created = 1;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.total_sub_created = 1;
+    assert_eq!(registrar, expected_registrar);
 
     let ix = unregister(
         unregister::Accounts {
             system_program: &system_program::ID,
             spl_name_service: &spl_name_service::ID,
-            registry: &registry_key,
+            registrar: &registry_key,
             sub_domain_account: &sub_domain_key,
             domain_owner: &bob.pubkey(),
         },
@@ -600,9 +600,9 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.total_sub_created = 0;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.total_sub_created = 0;
+    assert_eq!(registrar, expected_registrar);
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -617,13 +617,13 @@ async fn test_state() {
     assert_eq!(token_account.amount, 8_000_000 - total_fees);
 
     // Change price schedule + register + verify
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -663,8 +663,8 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.price_schedule = vec![
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.price_schedule = vec![
         Price {
             length: 1,
             price: 10_000_000,
@@ -686,7 +686,7 @@ async fn test_state() {
             price: 5_000_000,
         },
     ];
-    assert_eq!(registry, expected_registry);
+    assert_eq!(registrar, expected_registrar);
 
     let sub_domain = "1".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
@@ -704,7 +704,7 @@ async fn test_state() {
             reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
-            registry: &registry_key,
+            registrar: &registry_key,
             parent_domain_account: &name_key,
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
@@ -726,9 +726,9 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.total_sub_created = 1;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.total_sub_created = 1;
+    assert_eq!(registrar, expected_registrar);
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -758,7 +758,7 @@ async fn test_state() {
             reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
-            registry: &registry_key,
+            registrar: &registry_key,
             parent_domain_account: &name_key,
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
@@ -780,9 +780,9 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.total_sub_created = 2;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.total_sub_created = 2;
+    assert_eq!(registrar, expected_registrar);
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -815,7 +815,7 @@ async fn test_state() {
             reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
-            registry: &registry_key,
+            registrar: &registry_key,
             parent_domain_account: &name_key,
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
@@ -837,9 +837,9 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.total_sub_created = 3;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.total_sub_created = 3;
+    assert_eq!(registrar, expected_registrar);
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -864,7 +864,7 @@ async fn test_state() {
                 unregister::Accounts {
                     system_program: &system_program::ID,
                     spl_name_service: &spl_name_service::ID,
-                    registry: &registry_key,
+                    registrar: &registry_key,
                     sub_domain_account: &get_subdomain_key("1".to_owned(), &name_key),
                     domain_owner: &bob.pubkey(),
                 },
@@ -874,7 +874,7 @@ async fn test_state() {
                 unregister::Accounts {
                     system_program: &system_program::ID,
                     spl_name_service: &spl_name_service::ID,
-                    registry: &registry_key,
+                    registrar: &registry_key,
                     sub_domain_account: &get_subdomain_key("1⛽️".to_owned(), &name_key),
                     domain_owner: &bob.pubkey(),
                 },
@@ -884,7 +884,7 @@ async fn test_state() {
                 unregister::Accounts {
                     system_program: &system_program::ID,
                     spl_name_service: &spl_name_service::ID,
-                    registry: &registry_key,
+                    registrar: &registry_key,
                     sub_domain_account: &get_subdomain_key("1⛽️🚦".to_owned(), &name_key),
                     domain_owner: &bob.pubkey(),
                 },
@@ -901,9 +901,9 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.total_sub_created = 0;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.total_sub_created = 0;
+    assert_eq!(registrar, expected_registrar);
 
     // Admin register
     let sub_domain = "some-admin-test".to_string();
@@ -920,7 +920,7 @@ async fn test_state() {
                 rent_sysvar: &sysvar::rent::id(),
                 root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
                 reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
-                registry: &registry_key,
+                registrar: &registry_key,
                 parent_domain_account: &name_key,
                 sub_domain_account: &sub_domain_key,
                 sub_reverse_account: &sub_reverse_key,
@@ -940,9 +940,9 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.total_sub_created = 1;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.total_sub_created = 1;
+    assert_eq!(registrar, expected_registrar);
 
     // Unregister admin created sub
     sign_send_instructions(
@@ -951,7 +951,7 @@ async fn test_state() {
             unregister::Accounts {
                 system_program: &system_program::ID,
                 spl_name_service: &spl_name_service::ID,
-                registry: &registry_key,
+                registrar: &registry_key,
                 sub_domain_account: &sub_domain_key,
                 domain_owner: &alice.pubkey(),
             },
@@ -967,22 +967,22 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registry: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
-    expected_registry.total_sub_created = 0;
-    assert_eq!(registry, expected_registry);
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.total_sub_created = 0;
+    assert_eq!(registrar, expected_registrar);
 
     // Close registry
-    let ix = close_registry(
-        close_registry::Accounts {
+    let ix = close_registrar(
+        close_registrar::Accounts {
             system_program: &system_program::ID,
-            registry: &registry_key,
+            registrar: &registry_key,
             domain_name_account: &name_key,
             new_domain_owner: &alice.pubkey(),
             lamports_target: &mint_authority.pubkey(),
             registry_authority: &alice.pubkey(),
             spl_name_program_id: &spl_name_service::ID,
         },
-        close_registry::Params {},
+        close_registrar::Params {},
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
         .await
@@ -1006,16 +1006,16 @@ async fn test_state() {
     ////////////////////////////////////////
 
     // Test: create a registrar with nft collection
-    let ix = create_registry(
-        create_registry::Accounts {
+    let ix = create_registrar(
+        create_registrar::Accounts {
             system_program: &system_program::ID,
-            registry: &registry_key,
+            registrar: &registry_key,
             domain_name_account: &name_key,
             domain_owner: &alice.pubkey(),
             fee_payer: &prg_test_ctx.payer.pubkey(),
             spl_name_program_id: &spl_name_service::ID,
         },
-        create_registry::Params {
+        create_registrar::Params {
             nft_gated_collection: Some(common::metadata::COLLECTION_KEY),
             mint,
             fee_account: *alice_fee_account,
@@ -1035,9 +1035,9 @@ async fn test_state() {
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
         .await
         .unwrap();
-    let mut expected_registrar = Registry {
+    let mut expected_registrar = Registrar {
         nft_gated_collection: Some(common::metadata::COLLECTION_KEY),
-        tag: Tag::Registry,
+        tag: Tag::Registrar,
         nonce,
         authority: alice.pubkey(),
         fee_account: *alice_fee_account,
@@ -1061,17 +1061,17 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registrar: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
     assert_eq!(expected_registrar, registrar);
 
     // Test: edit the registrar
-    let ix = edit_registry(
-        edit_registry::Accounts {
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
             system_program: &system_program::ID,
             authority: &alice.pubkey(),
-            registry: &registry_key,
+            registrar: &registry_key,
         },
-        edit_registry::Params {
+        edit_registrar::Params {
             new_collection: None,
             new_authority: Some(alice.pubkey()),
             new_mint: None,
@@ -1110,7 +1110,7 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let registrar: Registry = Registry::deserialize(&mut &acc.data[..]).unwrap();
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
     expected_registrar.price_schedule = vec![
         Price {
             length: 1,

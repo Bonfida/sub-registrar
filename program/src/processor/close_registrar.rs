@@ -1,7 +1,7 @@
-//! Close a registry account
+//! Close a registrar account
 use crate::{
     error::SubRegisterError,
-    state::{registry::Registry, Tag},
+    state::{registry::Registrar, Tag},
 };
 
 use {
@@ -30,8 +30,8 @@ pub struct Accounts<'a, T> {
     pub system_program: &'a T,
 
     #[cons(writable)]
-    /// The registry account
-    pub registry: &'a T,
+    /// The registrar account
+    pub registrar: &'a T,
 
     #[cons(writable)]
     /// The domain account
@@ -60,7 +60,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
             system_program: next_account_info(accounts_iter)?,
-            registry: next_account_info(accounts_iter)?,
+            registrar: next_account_info(accounts_iter)?,
             domain_name_account: next_account_info(accounts_iter)?,
             new_domain_owner: next_account_info(accounts_iter)?,
             lamports_target: next_account_info(accounts_iter)?,
@@ -73,7 +73,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(accounts.spl_name_program_id, &spl_name_service::ID)?;
 
         // Check owners
-        check_account_owner(accounts.registry, program_id)?;
+        check_account_owner(accounts.registrar, program_id)?;
         check_account_owner(accounts.domain_name_account, &spl_name_service::ID)?;
 
         // Check signer
@@ -85,32 +85,32 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut registry = Registry::from_account_info(accounts.registry, crate::state::Tag::Registry)?;
+    let mut registrar = Registrar::from_account_info(accounts.registrar, crate::state::Tag::Registrar)?;
 
     // Checks
-    check_account_key(accounts.registry_authority, &registry.authority)?;
-    check_account_key(accounts.domain_name_account, &registry.domain_account)?;
+    check_account_key(accounts.registry_authority, &registrar.authority)?;
+    check_account_key(accounts.domain_name_account, &registrar.domain_account)?;
 
-    if registry.total_sub_created != 0 {
+    if registrar.total_sub_created != 0 {
         msg!(
             "Cannot close registry - {} subs are still registered",
-            registry.total_sub_created
+            registrar.total_sub_created
         );
         return Err(SubRegisterError::CannotCloseRegistry.into());
     }
 
     // Transfer domain to the user
     let seeds: &[&[u8]] = &[
-        Registry::SEEDS,
+        Registrar::SEEDS,
         &accounts.domain_name_account.key.to_bytes(),
-        &registry.authority.to_bytes(),
-        &[registry.nonce],
+        &registrar.authority.to_bytes(),
+        &[registrar.nonce],
     ];
     let ix = spl_name_service::instruction::transfer(
         spl_name_service::ID,
         *accounts.new_domain_owner.key,
         *accounts.domain_name_account.key,
-        *accounts.registry.key,
+        *accounts.registrar.key,
         None,
     )?;
     invoke_signed(
@@ -118,17 +118,17 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
         &[
             accounts.spl_name_program_id.clone(),
             accounts.domain_name_account.clone(),
-            accounts.registry.clone(),
+            accounts.registrar.clone(),
         ],
         &[seeds],
     )?;
 
     // Close registry account
-    registry.tag = Tag::ClosedRegistry;
-    registry.save(&mut accounts.registry.data.borrow_mut());
+    registrar.tag = Tag::ClosedRegistrar;
+    registrar.save(&mut accounts.registrar.data.borrow_mut());
 
     // Put lamports to 0
-    let mut lamports = accounts.registry.lamports.borrow_mut();
+    let mut lamports = accounts.registrar.lamports.borrow_mut();
     let mut target_lamports = accounts.lamports_target.lamports.borrow_mut();
 
     **target_lamports += **lamports;

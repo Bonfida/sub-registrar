@@ -1,8 +1,8 @@
-//! Edit a registry
+//! Edit a registrar
 
 use crate::{
     error::SubRegisterError,
-    state::{registry::Registry, schedule::Schedule, Tag},
+    state::{registry::Registrar, schedule::Schedule, Tag},
 };
 
 use {
@@ -47,7 +47,7 @@ pub struct Accounts<'a, T> {
 
     #[cons(writable)]
     /// The registry to edit
-    pub registry: &'a T,
+    pub registrar: &'a T,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -59,14 +59,14 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         let accounts = Accounts {
             system_program: next_account_info(accounts_iter)?,
             authority: next_account_info(accounts_iter)?,
-            registry: next_account_info(accounts_iter)?,
+            registrar: next_account_info(accounts_iter)?,
         };
 
         // Check keys
         check_account_key(accounts.system_program, &system_program::ID)?;
 
         // Check owners
-        check_account_owner(accounts.registry, program_id)?;
+        check_account_owner(accounts.registrar, program_id)?;
 
         // Check signer
         check_signer(accounts.authority)?;
@@ -77,45 +77,45 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut registry = Registry::from_account_info(accounts.registry, Tag::Registry)?;
+    let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
-    check_account_key(accounts.authority, &registry.authority)?;
+    check_account_key(accounts.authority, &registrar.authority)?;
 
     if let Some(new_authority) = params.new_authority {
-        registry.authority = new_authority;
+        registrar.authority = new_authority;
     }
 
     if let Some(new_mint) = params.new_mint {
-        registry.mint = new_mint;
+        registrar.mint = new_mint;
     }
 
     if let Some(new_fee_account) = params.new_fee_account {
-        registry.fee_account = new_fee_account;
+        registrar.fee_account = new_fee_account;
     }
 
     if let Some(new_collection) = params.new_collection {
-        registry.nft_gated_collection = Some(new_collection);
+        registrar.nft_gated_collection = Some(new_collection);
     }
 
     if let Some(mut new_price_schedule) = params.new_price_schedule {
         new_price_schedule.sort_by_key(|x| x.length);
-        registry.price_schedule = new_price_schedule;
+        registrar.price_schedule = new_price_schedule;
     }
 
     // Handle realloc
-    match registry.borsh_len().cmp(&accounts.registry.data_len()) {
+    match registrar.borsh_len().cmp(&accounts.registrar.data_len()) {
         Ordering::Greater => {
             msg!("[+] Realloc registry account (increasing size)");
-            let new_lamports = Rent::get()?.minimum_balance(registry.borsh_len());
+            let new_lamports = Rent::get()?.minimum_balance(registrar.borsh_len());
             let diff_lamports = new_lamports
-                .checked_sub(accounts.registry.lamports())
+                .checked_sub(accounts.registrar.lamports())
                 .ok_or(SubRegisterError::Overflow)?;
 
-            accounts.registry.realloc(registry.borsh_len(), false)?;
+            accounts.registrar.realloc(registrar.borsh_len(), false)?;
 
             let ix = system_instruction::transfer(
                 accounts.authority.key,
-                accounts.registry.key,
+                accounts.registrar.key,
                 diff_lamports,
             );
             invoke(
@@ -123,32 +123,32 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
                 &[
                     accounts.system_program.clone(),
                     accounts.authority.clone(),
-                    accounts.registry.clone(),
+                    accounts.registrar.clone(),
                 ],
             )?;
         }
         Ordering::Less => {
             msg!("[+] Realloc registry account (decreasing size)");
-            let new_lamports = Rent::get()?.minimum_balance(registry.borsh_len());
+            let new_lamports = Rent::get()?.minimum_balance(registrar.borsh_len());
             let diff_lamports = accounts
-                .registry
+                .registrar
                 .lamports()
                 .checked_sub(new_lamports)
                 .ok_or(SubRegisterError::Overflow)?;
 
-            accounts.registry.realloc(registry.borsh_len(), true)?;
+            accounts.registrar.realloc(registrar.borsh_len(), true)?;
 
-            let mut registry_lamports = accounts.registry.lamports.borrow_mut();
+            let mut registrar_lamports = accounts.registrar.lamports.borrow_mut();
             let mut authority_lamports = accounts.authority.lamports.borrow_mut();
 
             **authority_lamports += diff_lamports;
-            **registry_lamports -= diff_lamports;
+            **registrar_lamports -= diff_lamports;
         }
         Ordering::Equal => (),
     }
 
     // Serialize state
-    registry.save(&mut accounts.registry.data.borrow_mut());
+    registrar.save(&mut accounts.registrar.data.borrow_mut());
 
     Ok(())
 }
