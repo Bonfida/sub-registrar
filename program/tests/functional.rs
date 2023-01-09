@@ -4,7 +4,9 @@ use sub_register::{
     instruction::{
         admin_register, close_registrar, create_registrar, edit_registrar, register, unregister,
     },
-    state::{registry::Registrar, schedule::Price, FEE_ACC_OWNER, NAME_AUCTIONING},
+    state::{
+        registry::Registrar, schedule::Price, subrecord::SubRecord, FEE_ACC_OWNER, NAME_AUCTIONING,
+    },
 };
 use {
     borsh::BorshSerialize,
@@ -287,6 +289,7 @@ async fn test_functional() {
     let sub_domain = "some-test".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain
     let ix = register(
@@ -308,6 +311,7 @@ async fn test_functional() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -323,6 +327,7 @@ async fn test_functional() {
             registrar: &registry_key,
             sub_domain_account: &sub_domain_key,
             domain_owner: &bob.pubkey(),
+            sub_record: &subrecord_key,
         },
         unregister::Params {},
     );
@@ -334,6 +339,7 @@ async fn test_functional() {
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let sub_domain_key_to_unreg_1 = sub_domain_key.clone();
+    let (subrecord_key_to_unreg_1, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
@@ -354,6 +360,7 @@ async fn test_functional() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            sub_record: &subrecord_key_to_unreg_1.clone(),
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -368,6 +375,7 @@ async fn test_functional() {
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let sub_domain_key_to_unreg_2 = sub_domain_key.clone();
+    let (subrecord_key_to_unreg_2, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let ix = admin_register(
         admin_register::Accounts {
             name_auctioning_program: &NAME_AUCTIONING,
@@ -382,6 +390,7 @@ async fn test_functional() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             authority: &alice.pubkey(),
+            sub_record: &subrecord_key_to_unreg_2.clone(),
         },
         admin_register::Params {
             domain: format!("\0{}", sub_domain),
@@ -401,6 +410,7 @@ async fn test_functional() {
                 registrar: &registry_key,
                 sub_domain_account: &sub_domain_key_to_unreg_2,
                 domain_owner: &alice.pubkey(),
+                sub_record: &subrecord_key_to_unreg_2,
             },
             unregister::Params {},
         )],
@@ -417,6 +427,7 @@ async fn test_functional() {
                 registrar: &registry_key,
                 sub_domain_account: &sub_domain_key_to_unreg_1,
                 domain_owner: &bob.pubkey(),
+                sub_record: &subrecord_key_to_unreg_1,
             },
             unregister::Params {},
         )],
@@ -483,6 +494,7 @@ async fn test_functional() {
     let sub_domain = "some-test-22345".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
@@ -503,6 +515,7 @@ async fn test_functional() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: Some(&bob_nft_account),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),

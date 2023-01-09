@@ -6,6 +6,7 @@ use {
 
 pub mod registry;
 pub mod schedule;
+pub mod subrecord;
 
 pub const ROOT_DOMAIN_ACCOUNT: Pubkey = pubkey!("58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx");
 pub const NAME_AUCTIONING: Pubkey = pubkey!("jCebN34bUfdeUYJT13J1yG16XWQpt5PDx6Mse9GUqhR");
@@ -22,6 +23,8 @@ pub enum Tag {
     Uninitialized,
     Registrar,
     ClosedRegistrar,
+    SubRecord,
+    ClosedSubRecord,
 }
 
 impl Default for Tag {

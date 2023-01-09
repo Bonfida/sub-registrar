@@ -31,25 +31,26 @@ pub enum ProgramInstruction {
     EditRegistrar,
     /// Register a subdomain
     ///
-    /// | Index | Writable | Signer | Description                          |
-    /// | ---------------------------------------------------------------- |
-    /// | 0     | ❌        | ❌      | The system program account           |
-    /// | 1     | ❌        | ❌      | The SPL token program account        |
-    /// | 2     | ❌        | ❌      | The SPL name service program account |
-    /// | 3     | ❌        | ❌      | The rent sysvar account              |
-    /// | 4     | ❌        | ❌      | The name auctioning program account  |
-    /// | 5     | ❌        | ❌      | The .sol root domain                 |
-    /// | 6     | ❌        | ❌      | The reverse lookup class accoutn     |
-    /// | 7     | ✅        | ❌      | The fee account of the registry      |
-    /// | 8     | ✅        | ❌      |                                      |
-    /// | 9     | ✅        | ❌      |                                      |
-    /// | 10    | ✅        | ❌      |                                      |
-    /// | 11    | ✅        | ❌      |                                      |
-    /// | 12    | ✅        | ❌      |                                      |
-    /// | 13    | ✅        | ✅      | The fee payer account                |
-    /// | 14    | ✅        | ❌      |                                      |
-    /// | 15    | ❌        | ❌      |                                      |
-    /// | 16    | ❌        | ❌      |                                      |
+    /// | Index | Writable | Signer | Description                                             |
+    /// | ----------------------------------------------------------------------------------- |
+    /// | 0     | ❌        | ❌      | The system program account                              |
+    /// | 1     | ❌        | ❌      | The SPL token program account                           |
+    /// | 2     | ❌        | ❌      | The SPL name service program account                    |
+    /// | 3     | ❌        | ❌      | The rent sysvar account                                 |
+    /// | 4     | ❌        | ❌      | The name auctioning program account                     |
+    /// | 5     | ❌        | ❌      | The .sol root domain                                    |
+    /// | 6     | ❌        | ❌      | The reverse lookup class accoutn                        |
+    /// | 7     | ✅        | ❌      | The fee account of the registry                         |
+    /// | 8     | ✅        | ❌      |                                                         |
+    /// | 9     | ✅        | ❌      |                                                         |
+    /// | 10    | ✅        | ❌      |                                                         |
+    /// | 11    | ✅        | ❌      |                                                         |
+    /// | 12    | ✅        | ❌      |                                                         |
+    /// | 13    | ✅        | ✅      | The fee payer account                                   |
+    /// | 14    | ✅        | ❌      |                                                         |
+    /// | 15    | ✅        | ❌      | The subrecord account                                   |
+    /// | 16    | ❌        | ❌      | Optional NFT account if Registrar is NFT gated          |
+    /// | 17    | ❌        | ❌      | Optional NFT metadata account if Registrar is NFT gated |
     Register,
     /// Unregister a subdomain
     ///
@@ -59,7 +60,8 @@ pub enum ProgramInstruction {
     /// | 1     | ❌        | ❌      | The SPL name service program account |
     /// | 2     | ✅        | ❌      | The registrar account                |
     /// | 3     | ✅        | ❌      | The subdomain account to unregister  |
-    /// | 4     | ✅        | ✅      | The fee payer account                |
+    /// | 4     | ✅        | ❌      | The subrecord account                |
+    /// | 5     | ✅        | ✅      | The fee payer account                |
     Unregister,
     /// Close a registrar account
     ///
@@ -88,7 +90,8 @@ pub enum ProgramInstruction {
     /// | 8     | ✅        | ❌      | The parent domain account            |
     /// | 9     | ✅        | ❌      | The subdomain account to create      |
     /// | 10    | ✅        | ❌      | The subdomain reverse account        |
-    /// | 11    | ✅        | ✅      | The fee payer account                |
+    /// | 11    | ✅        | ❌      | The subrecord account                |
+    /// | 12    | ✅        | ✅      | The fee payer account                |
     AdminRegister,
 }
 pub fn create_registrar(
