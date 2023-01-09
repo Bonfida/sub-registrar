@@ -93,45 +93,293 @@ pub fn check_metadata(
     Err(SubRegisterError::MustHaveCollection.into())
 }
 
-#[test]
-fn test_price_logic() {
-    use crate::state::schedule::Price;
-    let schedule: Schedule = vec![
-        Price {
-            length: 1,
-            price: 100,
-        },
-        Price {
-            length: 2,
-            price: 90,
-        },
-        Price {
-            length: 3,
-            price: 80,
-        },
-        Price {
-            length: 4,
-            price: 70,
-        },
-        Price {
-            length: 5,
-            price: 60,
-        },
-    ];
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{cell::RefCell, rc::Rc};
+    #[test]
+    fn test_price_logic() {
+        use crate::state::schedule::Price;
+        let schedule: Schedule = vec![
+            Price {
+                length: 1,
+                price: 100,
+            },
+            Price {
+                length: 2,
+                price: 90,
+            },
+            Price {
+                length: 3,
+                price: 80,
+            },
+            Price {
+                length: 4,
+                price: 70,
+            },
+            Price {
+                length: 5,
+                price: 60,
+            },
+        ];
 
-    assert_eq!(get_domain_price("\01".to_string(), &schedule), 100);
-    assert_eq!(get_domain_price("\011".to_string(), &schedule), 90);
-    assert_eq!(get_domain_price("\0111".to_string(), &schedule), 80);
-    assert_eq!(get_domain_price("\01111".to_string(), &schedule), 70);
-    assert_eq!(get_domain_price("\011111".to_string(), &schedule), 60);
-    assert_eq!(get_domain_price("\0111111".to_string(), &schedule), 60);
-    assert_eq!(get_domain_price("\01111111111".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\01".to_string(), &schedule), 100);
+        assert_eq!(get_domain_price("\011".to_string(), &schedule), 90);
+        assert_eq!(get_domain_price("\0111".to_string(), &schedule), 80);
+        assert_eq!(get_domain_price("\01111".to_string(), &schedule), 70);
+        assert_eq!(get_domain_price("\011111".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\0111111".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\01111111111".to_string(), &schedule), 60);
 
-    assert_eq!(get_domain_price("\0😀".to_string(), &schedule), 100);
-    assert_eq!(get_domain_price("\01😀".to_string(), &schedule), 90);
-    assert_eq!(get_domain_price("\01😀1".to_string(), &schedule), 80);
-    assert_eq!(get_domain_price("\011😀1".to_string(), &schedule), 70);
-    assert_eq!(get_domain_price("\0111😀1".to_string(), &schedule), 60);
-    assert_eq!(get_domain_price("\011😀111".to_string(), &schedule), 60);
-    assert_eq!(get_domain_price("\011😀1111111".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\0😀".to_string(), &schedule), 100);
+        assert_eq!(get_domain_price("\01😀".to_string(), &schedule), 90);
+        assert_eq!(get_domain_price("\01😀1".to_string(), &schedule), 80);
+        assert_eq!(get_domain_price("\011😀1".to_string(), &schedule), 70);
+        assert_eq!(get_domain_price("\0111😀1".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\011😀111".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\011😀1111111".to_string(), &schedule), 60);
+    }
+
+    #[test]
+    fn test_check_nft_holding_and_get_mint() {
+        let owner = Pubkey::new_unique();
+
+        let mut data = spl_token::state::Account {
+            mint: Pubkey::new_unique(),
+            owner,
+            amount: 1,
+            state: spl_token::state::AccountState::Initialized,
+            ..spl_token::state::Account::default()
+        };
+        let mut buf: Vec<u8> = vec![0; spl_token::state::Account::LEN];
+        spl_token::state::Account::pack(data, &mut buf).unwrap();
+
+        // Correct owner with 1 token
+        check_nft_holding_and_get_mint(
+            &AccountInfo {
+                key: &Pubkey::new_unique(),
+                is_signer: false,
+                is_writable: true,
+                owner: &spl_token::ID,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                executable: false,
+                rent_epoch: 0,
+            },
+            &owner,
+        )
+        .unwrap();
+
+        // Wrong owner with 1 token
+        let res = check_nft_holding_and_get_mint(
+            &AccountInfo {
+                key: &Pubkey::new_unique(),
+                is_signer: false,
+                is_writable: true,
+                owner: &spl_token::ID,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                executable: false,
+                rent_epoch: 0,
+            },
+            &Pubkey::new_unique(),
+        );
+        assert!(res.is_err());
+
+        // Correct owner with 0 token
+        data.amount = 0;
+        let mut buf: Vec<u8> = vec![0; spl_token::state::Account::LEN];
+        spl_token::state::Account::pack(data, &mut buf).unwrap();
+        let res = check_nft_holding_and_get_mint(
+            &AccountInfo {
+                key: &Pubkey::new_unique(),
+                is_signer: false,
+                is_writable: true,
+                owner: &spl_token::ID,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                executable: false,
+                rent_epoch: 0,
+            },
+            &owner,
+        );
+        assert!(res.is_err());
+
+        // Wrong owner with 0 token
+        let res = check_nft_holding_and_get_mint(
+            &AccountInfo {
+                key: &Pubkey::new_unique(),
+                is_signer: false,
+                is_writable: true,
+                owner: &spl_token::ID,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                executable: false,
+                rent_epoch: 0,
+            },
+            &Pubkey::new_unique(),
+        );
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_check_metadata() {
+        use borsh::BorshSerialize;
+        let collection = Pubkey::new_unique();
+        let metadata = Metadata {
+            key: mpl_token_metadata::state::Key::MetadataV1,
+            update_authority: Pubkey::new_unique(),
+            mint: Pubkey::new_unique(),
+            data: mpl_token_metadata::state::Data {
+                name: "".to_string(),
+                symbol: "".to_string(),
+                uri: "".to_string(),
+                seller_fee_basis_points: 0,
+                creators: None,
+            },
+            primary_sale_happened: true,
+            is_mutable: true,
+            edition_nonce: Some(255),
+            token_standard: None,
+            collection: Some(mpl_token_metadata::state::Collection {
+                verified: true,
+                key: collection,
+            }),
+            uses: None,
+            collection_details: None,
+        };
+        let mut buf = vec![];
+        metadata.serialize(&mut buf).unwrap();
+        check_metadata(
+            &AccountInfo {
+                key: &Pubkey::new_unique(),
+                is_signer: false,
+                is_writable: true,
+                owner: &mpl_token_metadata::ID,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                executable: false,
+                rent_epoch: 0,
+            },
+            &collection,
+        )
+        .unwrap();
+
+        // Unverified collection
+        let metadata = Metadata {
+            key: mpl_token_metadata::state::Key::MetadataV1,
+            update_authority: Pubkey::new_unique(),
+            mint: Pubkey::new_unique(),
+            data: mpl_token_metadata::state::Data {
+                name: "".to_string(),
+                symbol: "".to_string(),
+                uri: "".to_string(),
+                seller_fee_basis_points: 0,
+                creators: None,
+            },
+            primary_sale_happened: true,
+            is_mutable: true,
+            edition_nonce: Some(255),
+            token_standard: None,
+            collection: Some(mpl_token_metadata::state::Collection {
+                verified: false,
+                key: collection,
+            }),
+            uses: None,
+            collection_details: None,
+        };
+        let mut buf = vec![];
+        metadata.serialize(&mut buf).unwrap();
+        assert!(check_metadata(
+            &AccountInfo {
+                key: &Pubkey::new_unique(),
+                is_signer: false,
+                is_writable: true,
+                owner: &mpl_token_metadata::ID,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                executable: false,
+                rent_epoch: 0,
+            },
+            &collection
+        )
+        .is_err());
+
+        // Different collection
+        let metadata = Metadata {
+            key: mpl_token_metadata::state::Key::MetadataV1,
+            update_authority: Pubkey::new_unique(),
+            mint: Pubkey::new_unique(),
+            data: mpl_token_metadata::state::Data {
+                name: "".to_string(),
+                symbol: "".to_string(),
+                uri: "".to_string(),
+                seller_fee_basis_points: 0,
+                creators: None,
+            },
+            primary_sale_happened: true,
+            is_mutable: true,
+            edition_nonce: Some(255),
+            token_standard: None,
+            collection: Some(mpl_token_metadata::state::Collection {
+                verified: true,
+                key: Pubkey::new_unique(),
+            }),
+            uses: None,
+            collection_details: None,
+        };
+        let mut buf = vec![];
+        metadata.serialize(&mut buf).unwrap();
+        assert!(check_metadata(
+            &AccountInfo {
+                key: &Pubkey::new_unique(),
+                is_signer: false,
+                is_writable: true,
+                owner: &mpl_token_metadata::ID,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                executable: false,
+                rent_epoch: 0,
+            },
+            &collection
+        )
+        .is_err());
+
+        // No collection
+        let metadata = Metadata {
+            key: mpl_token_metadata::state::Key::MetadataV1,
+            update_authority: Pubkey::new_unique(),
+            mint: Pubkey::new_unique(),
+            data: mpl_token_metadata::state::Data {
+                name: "".to_string(),
+                symbol: "".to_string(),
+                uri: "".to_string(),
+                seller_fee_basis_points: 0,
+                creators: None,
+            },
+            primary_sale_happened: true,
+            is_mutable: true,
+            edition_nonce: Some(255),
+            token_standard: None,
+            collection: None,
+            uses: None,
+            collection_details: None,
+        };
+        let mut buf = vec![];
+        metadata.serialize(&mut buf).unwrap();
+        assert!(check_metadata(
+            &AccountInfo {
+                key: &Pubkey::new_unique(),
+                is_signer: false,
+                is_writable: true,
+                owner: &mpl_token_metadata::ID,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                executable: false,
+                rent_epoch: 0,
+            },
+            &collection
+        )
+        .is_err());
+    }
 }

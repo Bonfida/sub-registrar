@@ -23,3 +23,9 @@ pub enum Tag {
     Registrar,
     ClosedRegistrar,
 }
+
+impl Default for Tag {
+    fn default() -> Self {
+        Self::Uninitialized
+    }
+}

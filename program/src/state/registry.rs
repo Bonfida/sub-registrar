@@ -8,7 +8,7 @@ use {
     solana_program::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey},
 };
 
-#[derive(BorshDeserialize, BorshSerialize, BorshSize, PartialEq, Debug, Eq)]
+#[derive(BorshDeserialize, BorshSerialize, BorshSize, PartialEq, Debug, Eq, Default)]
 pub struct Registrar {
     pub tag: super::Tag,
     pub nonce: u8,
@@ -72,5 +72,92 @@ impl Registrar {
         }
         let result = Registrar::deserialize(&mut data)?;
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{cell::RefCell, rc::Rc, u8};
+
+    use super::*;
+    use crate::state::Tag;
+
+    #[test]
+    fn test_from_account_info() {
+        let registrar: Registrar = Registrar {
+            tag: Tag::Registrar,
+            ..Registrar::default()
+        };
+        let closed_registrar: Registrar = Registrar {
+            tag: Tag::ClosedRegistrar,
+            ..Registrar::default()
+        };
+        let mut buf: Vec<u8> = vec![0; registrar.borsh_len()];
+        registrar.save(&mut buf[..]);
+
+        let des = Registrar::from_account_info(
+            &AccountInfo {
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                key: &Pubkey::default(),
+                is_signer: false,
+                is_writable: false,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                owner: &Pubkey::default(),
+                executable: false,
+                rent_epoch: 0,
+            },
+            Tag::Registrar,
+        )
+        .unwrap();
+        assert_eq!(registrar, des);
+
+        let res = Registrar::from_account_info(
+            &AccountInfo {
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                key: &Pubkey::default(),
+                is_signer: false,
+                is_writable: false,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                owner: &Pubkey::default(),
+                executable: false,
+                rent_epoch: 0,
+            },
+            Tag::ClosedRegistrar,
+        );
+        assert!(res.is_err());
+
+        let mut buf: Vec<u8> = vec![0; registrar.borsh_len()];
+        closed_registrar.save(&mut buf);
+
+        let des = Registrar::from_account_info(
+            &AccountInfo {
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                key: &Pubkey::default(),
+                is_signer: false,
+                is_writable: false,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                owner: &Pubkey::default(),
+                executable: false,
+                rent_epoch: 0,
+            },
+            Tag::ClosedRegistrar,
+        )
+        .unwrap();
+        assert_eq!(closed_registrar, des);
+
+        let res = Registrar::from_account_info(
+            &AccountInfo {
+                data: Rc::new(RefCell::new(&mut buf[..])),
+                key: &Pubkey::default(),
+                is_signer: false,
+                is_writable: false,
+                lamports: Rc::new(RefCell::new(&mut 0)),
+                owner: &Pubkey::default(),
+                executable: false,
+                rent_epoch: 0,
+            },
+            Tag::Registrar,
+        );
+        assert!(res.is_err());
     }
 }
