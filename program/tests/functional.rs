@@ -545,7 +545,7 @@ async fn test_functional() {
         },
         delete_subrecord::Params {},
     );
-    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
         .await
         .unwrap();
 }

@@ -3,7 +3,8 @@ use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
     instruction::{
-        admin_register, close_registrar, create_registrar, edit_registrar, register, unregister,
+        admin_register, close_registrar, create_registrar, delete_subrecord, edit_registrar,
+        register, unregister,
     },
     state::{
         registry::Registrar, schedule::Price, subrecord::SubRecord, FEE_ACC_OWNER, NAME_AUCTIONING,
@@ -355,6 +356,7 @@ async fn test_errors() {
     // - Register with 0 NFT
     // - Register with unverified collection
     // - Unregister with wrong sub record
+    // - Delete subrecord passing wrong name
     ////////////////////////////////
 
     // Test: Non .sol domain for registry
@@ -958,4 +960,27 @@ async fn test_errors() {
     )
     .await;
     assert!(result.is_err());
+
+    // Test: Delete subrecord passing wrong name
+    // Delete domain via SNS
+    let ix = spl_name_service::instruction::delete(
+        spl_name_service::ID,
+        sub_domain_key_1,
+        bob.pubkey(),
+        bob.pubkey(),
+    )
+    .unwrap();
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+        .await
+        .unwrap();
+    let ix = delete_subrecord(
+        delete_subrecord::Accounts {
+            sub_domain: &Pubkey::new_unique(),
+            lamports_target: &bob.pubkey(),
+            sub_record: &SubRecord::find_key(&sub_domain_key_1, &sub_register::ID).0,
+        },
+        delete_subrecord::Params {},
+    );
+    let res = sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![]).await;
+    assert!(res.is_err());
 }
