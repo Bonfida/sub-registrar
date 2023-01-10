@@ -12,6 +12,7 @@ use crate::instruction::ProgramInstruction;
 pub mod admin_register;
 pub mod close_registrar;
 pub mod create_registrar;
+pub mod delete_subrecord;
 pub mod edit_registrar;
 pub mod register;
 pub mod unregister;
@@ -66,6 +67,12 @@ impl Processor {
                 let params = admin_register::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 admin_register::process(program_id, accounts, params)?;
+            }
+            ProgramInstruction::DeleteSubrecord => {
+                msg!("[+] Instruction: Delete sub record Instruction");
+                let params = delete_subrecord::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                delete_subrecord::process(program_id, accounts, params)?;
             }
         }
 

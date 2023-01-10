@@ -2,7 +2,8 @@ use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
     instruction::{
-        admin_register, close_registrar, create_registrar, edit_registrar, register, unregister,
+        admin_register, close_registrar, create_registrar, delete_subrecord, edit_registrar,
+        register, unregister,
     },
     state::{
         registry::Registrar, schedule::Price, subrecord::SubRecord, FEE_ACC_OWNER, NAME_AUCTIONING,
@@ -512,7 +513,7 @@ async fn test_functional() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: Some(&bob_nft_account),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
             sub_record: &subrecord_key,
@@ -520,6 +521,29 @@ async fn test_functional() {
         register::Params {
             domain: format!("\0{}", sub_domain),
         },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+        .await
+        .unwrap();
+
+    // Delete domain via SNS
+    let ix = spl_name_service::instruction::delete(
+        spl_name_service::ID,
+        sub_domain_key,
+        bob.pubkey(),
+        bob.pubkey(),
+    )
+    .unwrap();
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+        .await
+        .unwrap();
+    let ix = delete_subrecord(
+        delete_subrecord::Accounts {
+            sub_domain: &sub_domain_key,
+            lamports_target: &bob.pubkey(),
+            sub_record: &SubRecord::find_key(&sub_domain_key, &sub_register::ID).0,
+        },
+        delete_subrecord::Params {},
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
         .await

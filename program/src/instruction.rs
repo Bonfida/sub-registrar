@@ -1,5 +1,6 @@
 pub use crate::processor::{
-    admin_register, close_registrar, create_registrar, edit_registrar, register, unregister,
+    admin_register, close_registrar, create_registrar, delete_subrecord, edit_registrar, register,
+    unregister,
 };
 use {
     bonfida_utils::InstructionsAccount,
@@ -93,6 +94,14 @@ pub enum ProgramInstruction {
     /// | 11    | ✅        | ❌      | The subrecord account                |
     /// | 12    | ✅        | ✅      | The fee payer account                |
     AdminRegister,
+    /// Delete a subrecord account account
+    ///
+    /// | Index | Writable | Signer | Description            |
+    /// | -------------------------------------------------- |
+    /// | 0     | ✅        | ❌      | The sub domain account |
+    /// | 1     | ✅        | ❌      | The sub record account |
+    /// | 2     | ✅        | ❌      | The lamports target    |
+    DeleteSubrecord,
 }
 pub fn create_registrar(
     accounts: create_registrar::Accounts<Pubkey>,
@@ -126,4 +135,10 @@ pub fn admin_register(
     params: admin_register::Params,
 ) -> Instruction {
     accounts.get_instruction(crate::ID, ProgramInstruction::AdminRegister as u8, params)
+}
+pub fn delete_subrecord(
+    accounts: delete_subrecord::Accounts<Pubkey>,
+    params: delete_subrecord::Params,
+) -> Instruction {
+    accounts.get_instruction(crate::ID, ProgramInstruction::DeleteSubrecord as u8, params)
 }
