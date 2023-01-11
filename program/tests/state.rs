@@ -6,7 +6,10 @@ use sub_register::{
     instruction::{
         admin_register, close_registrar, create_registrar, edit_registrar, register, unregister,
     },
-    state::{registry::Registrar, schedule::Price, Tag, FEE_ACC_OWNER, NAME_AUCTIONING},
+    state::{
+        registry::Registrar, schedule::Price, subrecord::SubRecord, Tag, FEE_ACC_OWNER,
+        NAME_AUCTIONING,
+    },
     utils::get_subdomain_key,
 };
 
@@ -539,6 +542,7 @@ async fn test_state() {
     let sub_domain = "some-test".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain
     let ix = register(
@@ -560,6 +564,7 @@ async fn test_state() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -587,6 +592,7 @@ async fn test_state() {
             registrar: &registry_key,
             sub_domain_account: &sub_domain_key,
             domain_owner: &bob.pubkey(),
+            sub_record: &subrecord_key,
         },
         unregister::Params {},
     );
@@ -691,6 +697,7 @@ async fn test_state() {
     let sub_domain = "1".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain of length 1
     let ix = register(
@@ -712,6 +719,7 @@ async fn test_state() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -745,6 +753,7 @@ async fn test_state() {
     let sub_domain = "1⛽️".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain of length 2
     let ix = register(
@@ -766,6 +775,7 @@ async fn test_state() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -783,6 +793,14 @@ async fn test_state() {
     let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
     expected_registrar.total_sub_created = 2;
     assert_eq!(registrar, expected_registrar);
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(subrecord_key)
+        .await
+        .unwrap()
+        .unwrap();
+    let subrecord: SubRecord = SubRecord::deserialize(&mut &acc.data[..]).unwrap();
+    assert_eq!(subrecord, SubRecord::new());
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -802,6 +820,7 @@ async fn test_state() {
     let sub_domain = "1⛽️🚦".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain of length 3
     let ix = register(
@@ -823,6 +842,7 @@ async fn test_state() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -840,6 +860,14 @@ async fn test_state() {
     let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
     expected_registrar.total_sub_created = 3;
     assert_eq!(registrar, expected_registrar);
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(subrecord_key)
+        .await
+        .unwrap()
+        .unwrap();
+    let subrecord: SubRecord = SubRecord::deserialize(&mut &acc.data[..]).unwrap();
+    assert_eq!(subrecord, SubRecord::new());
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -867,6 +895,11 @@ async fn test_state() {
                     registrar: &registry_key,
                     sub_domain_account: &get_subdomain_key("1".to_owned(), &name_key),
                     domain_owner: &bob.pubkey(),
+                    sub_record: &SubRecord::find_key(
+                        &get_subdomain_key("1".to_owned(), &name_key),
+                        &sub_register::ID,
+                    )
+                    .0,
                 },
                 unregister::Params {},
             ),
@@ -877,6 +910,11 @@ async fn test_state() {
                     registrar: &registry_key,
                     sub_domain_account: &get_subdomain_key("1⛽️".to_owned(), &name_key),
                     domain_owner: &bob.pubkey(),
+                    sub_record: &SubRecord::find_key(
+                        &get_subdomain_key("1⛽️".to_owned(), &name_key),
+                        &sub_register::ID,
+                    )
+                    .0,
                 },
                 unregister::Params {},
             ),
@@ -887,6 +925,11 @@ async fn test_state() {
                     registrar: &registry_key,
                     sub_domain_account: &get_subdomain_key("1⛽️🚦".to_owned(), &name_key),
                     domain_owner: &bob.pubkey(),
+                    sub_record: &SubRecord::find_key(
+                        &get_subdomain_key("1⛽️🚦".to_owned(), &name_key),
+                        &sub_register::ID,
+                    )
+                    .0,
                 },
                 unregister::Params {},
             ),
@@ -909,6 +952,7 @@ async fn test_state() {
     let sub_domain = "some-admin-test".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     sign_send_instructions(
         &mut prg_test_ctx,
         vec![admin_register(
@@ -925,6 +969,7 @@ async fn test_state() {
                 sub_domain_account: &sub_domain_key,
                 sub_reverse_account: &sub_reverse_key,
                 authority: &alice.pubkey(),
+                sub_record: &subrecord_key,
             },
             admin_register::Params {
                 domain: format!("\0{}", sub_domain),
@@ -944,6 +989,16 @@ async fn test_state() {
     expected_registrar.total_sub_created = 1;
     assert_eq!(registrar, expected_registrar);
 
+    // Check subrecord
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(subrecord_key)
+        .await
+        .unwrap()
+        .unwrap();
+    let subrecord: SubRecord = SubRecord::deserialize(&mut &acc.data[..]).unwrap();
+    assert_eq!(subrecord, SubRecord::new());
+
     // Unregister admin created sub
     sign_send_instructions(
         &mut prg_test_ctx,
@@ -954,6 +1009,7 @@ async fn test_state() {
                 registrar: &registry_key,
                 sub_domain_account: &sub_domain_key,
                 domain_owner: &alice.pubkey(),
+                sub_record: &subrecord_key,
             },
             unregister::Params {},
         )],
@@ -970,6 +1026,12 @@ async fn test_state() {
     let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
     expected_registrar.total_sub_created = 0;
     assert_eq!(registrar, expected_registrar);
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(subrecord_key)
+        .await
+        .unwrap();
+    assert!(acc.is_none());
 
     // Close registry
     let ix = close_registrar(

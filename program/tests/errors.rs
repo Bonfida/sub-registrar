@@ -3,9 +3,12 @@ use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
     instruction::{
-        admin_register, close_registrar, create_registrar, edit_registrar, register, unregister,
+        admin_register, close_registrar, create_registrar, delete_subrecord, edit_registrar,
+        register, unregister,
     },
-    state::{registry::Registrar, schedule::Price, FEE_ACC_OWNER, NAME_AUCTIONING},
+    state::{
+        registry::Registrar, schedule::Price, subrecord::SubRecord, FEE_ACC_OWNER, NAME_AUCTIONING,
+    },
 };
 use {
     borsh::BorshSerialize,
@@ -301,6 +304,7 @@ async fn test_errors() {
     let sub_domain = "1⛽️".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // To unregister later
     let sub_domain_key_to_unreg = sub_domain_key.clone();
@@ -325,6 +329,7 @@ async fn test_errors() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -350,6 +355,8 @@ async fn test_errors() {
     // - Wrong bonfida fee account
     // - Register with 0 NFT
     // - Register with unverified collection
+    // - Unregister with wrong sub record
+    // - Delete subrecord passing wrong name
     ////////////////////////////////
 
     // Test: Non .sol domain for registry
@@ -466,6 +473,7 @@ async fn test_errors() {
     let sub_domain = "this-is-an-error-test".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let ix = register(
         register::Accounts {
             name_auctioning_program: &NAME_AUCTIONING,
@@ -485,6 +493,7 @@ async fn test_errors() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -513,6 +522,7 @@ async fn test_errors() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -522,6 +532,7 @@ async fn test_errors() {
     assert!(result.is_err());
 
     // Test: Close + Register in same transaction
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key_to_unreg, &sub_register::ID);
     let ix = spl_token::instruction::mint_to(
         &spl_token::ID,
         &mint,
@@ -541,6 +552,7 @@ async fn test_errors() {
             registrar: &registry_key,
             sub_domain_account: &&sub_domain_key_to_unreg,
             domain_owner: &bob.pubkey(),
+            sub_record: &subrecord_key,
         },
         unregister::Params {},
     );
@@ -551,6 +563,7 @@ async fn test_errors() {
     let sub_domain = "close-register-test".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key_to_unreg, &sub_register::ID);
     let result = sign_send_instructions(
         &mut prg_test_ctx,
         vec![
@@ -585,6 +598,7 @@ async fn test_errors() {
                     bonfida_fee_account: &bonfida_fee_account,
                     nft_account: None,
                     nft_metadata_account: None,
+                    sub_record: &subrecord_key,
                 },
                 register::Params {
                     domain: format!("\0{}", sub_domain),
@@ -600,6 +614,7 @@ async fn test_errors() {
     let sub_domain = "invalid-sub".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let result = sign_send_instructions(
         &mut prg_test_ctx,
         vec![register(
@@ -621,6 +636,7 @@ async fn test_errors() {
                 bonfida_fee_account: &bonfida_fee_account,
                 nft_account: None,
                 nft_metadata_account: None,
+                sub_record: &subrecord_key,
             },
             register::Params { domain: sub_domain },
         )],
@@ -639,6 +655,7 @@ async fn test_errors() {
                 registrar: &registry_key,
                 sub_domain_account: &fake_subdomain_key,
                 domain_owner: &bob.pubkey(),
+                sub_record: &subrecord_key,
             },
             unregister::Params {},
         )],
@@ -651,6 +668,7 @@ async fn test_errors() {
     let sub_domain = "some-admin-test".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let result = sign_send_instructions(
         &mut prg_test_ctx,
         vec![admin_register(
@@ -667,6 +685,7 @@ async fn test_errors() {
                 sub_domain_account: &sub_domain_key,
                 sub_reverse_account: &sub_reverse_key,
                 authority: &bob.pubkey(),
+                sub_record: &subrecord_key,
             },
             admin_register::Params {
                 domain: format!("\0{}", sub_domain),
@@ -681,6 +700,7 @@ async fn test_errors() {
     let sub_domain = "invalid-sub".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let result = sign_send_instructions(
         &mut prg_test_ctx,
         vec![register(
@@ -702,6 +722,7 @@ async fn test_errors() {
                 bonfida_fee_account: &alice_fee_account,
                 nft_account: None,
                 nft_metadata_account: None,
+                sub_record: &subrecord_key,
             },
             register::Params {
                 domain: format!("\0{}", sub_domain),
@@ -741,6 +762,7 @@ async fn test_errors() {
     let sub_domain = "some-test-22345".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
@@ -761,6 +783,7 @@ async fn test_errors() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: Some(&bob_nft_account_zero_amount),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
+            sub_record: &subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -773,6 +796,7 @@ async fn test_errors() {
     let sub_domain = "some-t332325".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
@@ -793,11 +817,170 @@ async fn test_errors() {
             bonfida_fee_account: &bonfida_fee_account,
             nft_account: Some(&bob_nft_account),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
+            sub_record: &&subrecord_key,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
         },
     );
     let res = sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob]).await;
+    assert!(res.is_err());
+
+    // Test: Unregister with wrong sub record
+    // First close old registrar + create new + register 2 subs
+    let sub_domain_1 = "some-test-2342345".to_string();
+    let sub_domain_key_1 = sub_register::utils::get_subdomain_key(sub_domain_1.clone(), &name_key);
+    let sub_reverse_key_1 =
+        sub_register::utils::get_subdomain_reverse(sub_domain_1.clone(), &name_key);
+    let (subrecord_key_1, _) = SubRecord::find_key(&sub_domain_key_1, &sub_register::ID);
+
+    let sub_domain_2 = "some-test-234234dsff5".to_string();
+    let sub_domain_key_2 = sub_register::utils::get_subdomain_key(sub_domain_2.clone(), &name_key);
+    let sub_reverse_key_2 =
+        sub_register::utils::get_subdomain_reverse(sub_domain_2.clone(), &name_key);
+    let (subrecord_key_2, _) = SubRecord::find_key(&sub_domain_key_2, &sub_register::ID);
+    let fee_payer = prg_test_ctx.payer.pubkey().clone();
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![close_registrar(
+            close_registrar::Accounts {
+                system_program: &system_program::ID,
+                registrar: &registry_key,
+                domain_name_account: &name_key,
+                new_domain_owner: &alice.pubkey(),
+                lamports_target: &mint_authority.pubkey(),
+                registry_authority: &alice.pubkey(),
+                spl_name_program_id: &spl_name_service::ID,
+            },
+            close_registrar::Params {},
+        )],
+        vec![&alice],
+    )
+    .await
+    .unwrap();
+    sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![
+            create_registrar(
+                create_registrar::Accounts {
+                    system_program: &system_program::ID,
+                    registrar: &registry_key,
+                    domain_name_account: &name_key,
+                    domain_owner: &alice.pubkey(),
+                    fee_payer: &fee_payer,
+                    spl_name_program_id: &spl_name_service::ID,
+                },
+                create_registrar::Params {
+                    nft_gated_collection: None,
+                    mint,
+                    fee_account: *alice_fee_account,
+                    authority: alice.pubkey(),
+                    price_schedule: vec![
+                        Price {
+                            length: 2,
+                            price: 10_000_000,
+                        },
+                        Price {
+                            length: 1,
+                            price: 10_000_000,
+                        },
+                    ],
+                },
+            ),
+            register(
+                register::Accounts {
+                    name_auctioning_program: &NAME_AUCTIONING,
+                    system_program: &system_program::ID,
+                    spl_token_program: &spl_token::ID,
+                    spl_name_service: &spl_name_service::ID,
+                    rent_sysvar: &sysvar::rent::id(),
+                    root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+                    reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                    fee_account: alice_fee_account,
+                    fee_source: &bob_ata,
+                    registrar: &registry_key,
+                    parent_domain_account: &name_key,
+                    sub_domain_account: &sub_domain_key_1,
+                    sub_reverse_account: &sub_reverse_key_1,
+                    fee_payer: &bob.pubkey(),
+                    bonfida_fee_account: &bonfida_fee_account,
+                    nft_account: None,
+                    nft_metadata_account: None,
+                    sub_record: &subrecord_key_1,
+                },
+                register::Params {
+                    domain: format!("\0{}", sub_domain_1),
+                },
+            ),
+            register(
+                register::Accounts {
+                    name_auctioning_program: &NAME_AUCTIONING,
+                    system_program: &system_program::ID,
+                    spl_token_program: &spl_token::ID,
+                    spl_name_service: &spl_name_service::ID,
+                    rent_sysvar: &sysvar::rent::id(),
+                    root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+                    reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                    fee_account: alice_fee_account,
+                    fee_source: &bob_ata,
+                    registrar: &registry_key,
+                    parent_domain_account: &name_key,
+                    sub_domain_account: &sub_domain_key_2,
+                    sub_reverse_account: &sub_reverse_key_2,
+                    fee_payer: &bob.pubkey(),
+                    bonfida_fee_account: &bonfida_fee_account,
+                    nft_account: None,
+                    nft_metadata_account: None,
+                    sub_record: &subrecord_key_2,
+                },
+                register::Params {
+                    domain: format!("\0{}", sub_domain_2),
+                },
+            ),
+        ],
+        vec![&bob, &alice],
+    )
+    .await
+    .unwrap();
+
+    let result = sign_send_instructions(
+        &mut prg_test_ctx,
+        vec![unregister(
+            unregister::Accounts {
+                system_program: &system_program::ID,
+                spl_name_service: &spl_name_service::ID,
+                registrar: &registry_key,
+                sub_domain_account: &sub_domain_key_1,
+                domain_owner: &bob.pubkey(),
+                sub_record: &subrecord_key_2,
+            },
+            unregister::Params {},
+        )],
+        vec![&bob],
+    )
+    .await;
+    assert!(result.is_err());
+
+    // Test: Delete subrecord passing wrong name
+    // Delete domain via SNS
+    let ix = spl_name_service::instruction::delete(
+        spl_name_service::ID,
+        sub_domain_key_1,
+        bob.pubkey(),
+        bob.pubkey(),
+    )
+    .unwrap();
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+        .await
+        .unwrap();
+    let ix = delete_subrecord(
+        delete_subrecord::Accounts {
+            sub_domain: &Pubkey::new_unique(),
+            lamports_target: &bob.pubkey(),
+            sub_record: &SubRecord::find_key(&sub_domain_key_1, &sub_register::ID).0,
+        },
+        delete_subrecord::Params {},
+    );
+    let res = sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![]).await;
     assert!(res.is_err());
 }

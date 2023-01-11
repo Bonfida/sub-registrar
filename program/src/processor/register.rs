@@ -1,9 +1,11 @@
 //! Register a subdomain
 
 use crate::{
+    cpi::Cpi,
     error::SubRegisterError,
     state::{
-        registry::Registrar, Tag, FEE_ACC_OWNER, FEE_PCT, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT,
+        registry::Registrar, subrecord::SubRecord, Tag, FEE_ACC_OWNER, FEE_PCT, NAME_AUCTIONING,
+        ROOT_DOMAIN_ACCOUNT,
     },
     utils,
     utils::{check_metadata, check_nft_holding_and_get_mint},
@@ -89,7 +91,14 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     pub bonfida_fee_account: &'a T,
 
+    #[cons(writable)]
+    /// The subrecord account
+    pub sub_record: &'a T,
+
+    /// Optional NFT account if Registrar is NFT gated
     pub nft_account: Option<&'a T>,
+
+    /// Optional NFT metadata account if Registrar is NFT gated
     pub nft_metadata_account: Option<&'a T>,
 }
 
@@ -115,6 +124,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             sub_reverse_account: next_account_info(accounts_iter)?,
             fee_payer: next_account_info(accounts_iter)?,
             bonfida_fee_account: next_account_info(accounts_iter)?,
+            sub_record: next_account_info(accounts_iter)?,
             nft_account: next_account_info(accounts_iter).ok(),
             nft_metadata_account: next_account_info(accounts_iter).ok(),
         };
@@ -138,6 +148,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             check_account_owner(accounts.sub_reverse_account, &spl_name_service::ID)
         })?;
         check_account_owner(accounts.bonfida_fee_account, &spl_token::ID)?;
+        check_account_owner(accounts.sub_record, &system_program::ID)?;
 
         // Check signer
         check_signer(accounts.fee_payer)?;
@@ -148,10 +159,13 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
+    let (subrecord_key, subrecord_nonce) =
+        SubRecord::find_key(accounts.sub_domain_account.key, program_id);
     let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
     check_account_key(accounts.fee_account, &registrar.fee_account)?;
     check_account_key(accounts.parent_domain_account, &registrar.domain_account)?;
+    check_account_key(accounts.sub_record, &subrecord_key)?;
     check_token_account_owner(accounts.bonfida_fee_account, &FEE_ACC_OWNER)?;
 
     if !params.domain.starts_with('\0') {
@@ -309,6 +323,23 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             &[seeds],
         )?;
     }
+
+    // Create subrecord account
+    let sub_record = SubRecord::new();
+    let seeds: &[&[u8]] = &[
+        SubRecord::SEEDS,
+        &accounts.sub_domain_account.key.to_bytes(),
+        &[subrecord_nonce],
+    ];
+    Cpi::create_account(
+        program_id,
+        accounts.system_program,
+        accounts.fee_payer,
+        accounts.sub_record,
+        seeds,
+        sub_record.borsh_len(),
+    )?;
+    sub_record.save(&mut accounts.sub_record.data.borrow_mut());
 
     // Increment nb sub created
     registrar.total_sub_created = registrar

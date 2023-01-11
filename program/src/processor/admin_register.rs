@@ -1,8 +1,9 @@
 //! Allow the authority of a `Registrar` to register a subdomain without token transfer
 
 use crate::{
+    cpi::Cpi,
     error::SubRegisterError,
-    state::{registry::Registrar, Tag, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT},
+    state::{registry::Registrar, subrecord::SubRecord, Tag, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT},
 };
 
 use {
@@ -73,6 +74,10 @@ pub struct Accounts<'a, T> {
     /// The subdomain reverse account
     pub sub_reverse_account: &'a T,
 
+    #[cons(writable)]
+    /// The subrecord account
+    pub sub_record: &'a T,
+
     #[cons(writable, signer)]
     /// The fee payer account
     pub authority: &'a T,
@@ -96,6 +101,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             parent_domain_account: next_account_info(accounts_iter)?,
             sub_domain_account: next_account_info(accounts_iter)?,
             sub_reverse_account: next_account_info(accounts_iter)?,
+            sub_record: next_account_info(accounts_iter)?,
             authority: next_account_info(accounts_iter)?,
         };
 
@@ -115,6 +121,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.sub_reverse_account, &system_program::ID).or_else(|_| {
             check_account_owner(accounts.sub_reverse_account, &spl_name_service::ID)
         })?;
+        check_account_owner(accounts.sub_record, &system_program::ID)?;
 
         // Check signer
         check_signer(accounts.authority)?;
@@ -125,10 +132,13 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
+    let (subrecord_key, subrecord_nonce) =
+        SubRecord::find_key(accounts.sub_domain_account.key, program_id);
     let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
     check_account_key(accounts.authority, &registrar.authority)?;
     check_account_key(accounts.parent_domain_account, &registrar.domain_account)?;
+    check_account_key(accounts.sub_record, &subrecord_key)?;
 
     if !params.domain.starts_with('\0') {
         return Err(SubRegisterError::InvalidSubdomain.into());
@@ -222,6 +232,23 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             &[seeds],
         )?;
     }
+
+    // Create subrecord account
+    let sub_record = SubRecord::new();
+    let seeds: &[&[u8]] = &[
+        SubRecord::SEEDS,
+        &accounts.sub_domain_account.key.to_bytes(),
+        &[subrecord_nonce],
+    ];
+    Cpi::create_account(
+        program_id,
+        accounts.system_program,
+        accounts.authority,
+        accounts.sub_record,
+        seeds,
+        sub_record.borsh_len(),
+    )?;
+    sub_record.save(&mut accounts.sub_record.data.borrow_mut());
 
     // Increment nb sub created
     registrar.total_sub_created = registrar
