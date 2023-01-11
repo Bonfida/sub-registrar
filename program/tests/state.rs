@@ -269,6 +269,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -324,6 +325,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -372,6 +374,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_collection: None,
             new_authority: None,
             new_mint: Some(new_mint),
@@ -401,6 +404,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_collection: None,
             new_authority: None,
             new_mint: Some(mint),
@@ -431,6 +435,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -459,6 +464,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -489,6 +495,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_authority: Some(new_authority.pubkey()),
             new_mint: None,
             new_fee_account: None,
@@ -518,6 +525,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_collection: None,
             new_authority: Some(alice.pubkey()),
             new_mint: None,
@@ -630,6 +638,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -1134,6 +1143,7 @@ async fn test_state() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            disable_nft_gate: false,
             new_collection: None,
             new_authority: Some(alice.pubkey()),
             new_mint: None,
@@ -1195,5 +1205,34 @@ async fn test_state() {
             price: 5_000_000,
         },
     ];
+    assert_eq!(registrar, expected_registrar);
+
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
+            system_program: &system_program::ID,
+            authority: &alice.pubkey(),
+            registrar: &registry_key,
+        },
+        edit_registrar::Params {
+            disable_nft_gate: true,
+            new_collection: None,
+            new_authority: Some(alice.pubkey()),
+            new_mint: None,
+            new_fee_account: None,
+            new_price_schedule: None,
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
+        .await
+        .unwrap();
+    // Verify state
+    let acc = prg_test_ctx
+        .banks_client
+        .get_account(registry_key)
+        .await
+        .unwrap()
+        .unwrap();
+    let registrar: Registrar = Registrar::deserialize(&mut &acc.data[..]).unwrap();
+    expected_registrar.nft_gated_collection = None;
     assert_eq!(registrar, expected_registrar);
 }

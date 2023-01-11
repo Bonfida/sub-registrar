@@ -34,6 +34,7 @@ pub struct Params {
     pub new_fee_account: Option<Pubkey>,
     pub new_price_schedule: Option<Schedule>,
     pub new_collection: Option<Pubkey>,
+    pub disable_nft_gate: bool,
 }
 
 #[derive(InstructionsAccount)]
@@ -100,6 +101,10 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     if let Some(mut new_price_schedule) = params.new_price_schedule {
         new_price_schedule.sort_by_key(|x| x.length);
         registrar.price_schedule = new_price_schedule;
+    }
+
+    if params.disable_nft_gate {
+        registrar.nft_gated_collection = None;
     }
 
     // Handle realloc

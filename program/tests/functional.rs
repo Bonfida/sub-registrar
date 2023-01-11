@@ -239,6 +239,7 @@ async fn test_functional() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
+            disable_nft_gate: false,
             new_price_schedule: Some(vec![
                 Price {
                     length: 1,
@@ -270,6 +271,7 @@ async fn test_functional() {
             new_collection: None,
             new_authority: None,
             new_mint: None,
+            disable_nft_gate: false,
             new_fee_account: None,
             new_price_schedule: Some(vec![
                 Price {
@@ -493,6 +495,59 @@ async fn test_functional() {
 
     // Test: register with NFT
     let sub_domain = "some-test-22345".to_string();
+    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    // Bob registers a subdomain
+    let ix = register(
+        register::Accounts {
+            name_auctioning_program: &NAME_AUCTIONING,
+            system_program: &system_program::ID,
+            spl_token_program: &spl_token::ID,
+            spl_name_service: &spl_name_service::ID,
+            rent_sysvar: &sysvar::rent::id(),
+            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            fee_account: alice_fee_account,
+            fee_source: &bob_ata,
+            registrar: &registry_key,
+            parent_domain_account: &name_key,
+            sub_domain_account: &sub_domain_key,
+            sub_reverse_account: &sub_reverse_key,
+            fee_payer: &bob.pubkey(),
+            bonfida_fee_account,
+            nft_account: Some(&bob_nft_account),
+            nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
+            sub_record: &subrecord_key,
+        },
+        register::Params {
+            domain: format!("\0{}", sub_domain),
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+        .await
+        .unwrap();
+
+    // Test: edit registrar to remove NFT collection & register without NFT
+    let ix = edit_registrar(
+        edit_registrar::Accounts {
+            system_program: &system_program::ID,
+            authority: &alice.pubkey(),
+            registrar: &registry_key,
+        },
+        edit_registrar::Params {
+            disable_nft_gate: true,
+            new_collection: None,
+            new_authority: Some(alice.pubkey()),
+            new_mint: None,
+            new_fee_account: None,
+            new_price_schedule: None,
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
+        .await
+        .unwrap();
+    let sub_domain = "some-test-1343123422345".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);

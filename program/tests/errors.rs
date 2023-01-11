@@ -406,6 +406,7 @@ async fn test_errors() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
+            disable_nft_gate: false,
             new_price_schedule: Some(vec![
                 Price {
                     length: 1,
@@ -752,6 +753,7 @@ async fn test_errors() {
             new_mint: None,
             new_fee_account: None,
             new_price_schedule: None,
+            disable_nft_gate: false,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
