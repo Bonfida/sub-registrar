@@ -2,7 +2,7 @@
 
 use crate::{
     error::SubRegisterError,
-    state::{registry::Registrar, subrecord::SubRecord, Tag},
+    state::{nft_mint_record::NftMintRecord, registry::Registrar, subrecord::SubRecord, Tag},
 };
 
 use {
@@ -49,6 +49,9 @@ pub struct Accounts<'a, T> {
     #[cons(writable, signer)]
     /// The fee payer account
     pub domain_owner: &'a T,
+
+    #[cons(writable)]
+    pub mint_record: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -64,6 +67,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             sub_domain_account: next_account_info(accounts_iter)?,
             sub_record: next_account_info(accounts_iter)?,
             domain_owner: next_account_info(accounts_iter)?,
+            mint_record: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -112,6 +116,23 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
             accounts.domain_owner.clone(),
         ],
     )?;
+
+    // Handle NFT mint record
+    if let Some(mint_record) = sub_record.mint_record {
+        let mint_record_account = accounts
+            .mint_record
+            .ok_or(SubRegisterError::MissingAccount)?;
+        check_account_owner(mint_record_account, program_id)?;
+        check_account_key(mint_record_account, &mint_record)?;
+
+        let mut mint_record =
+            NftMintRecord::from_account_info(mint_record_account, Tag::NftMintRecord)?;
+        mint_record.count = mint_record
+            .count
+            .checked_sub(1)
+            .ok_or(SubRegisterError::Overflow)?;
+        mint_record.save(&mut mint_record_account.data.borrow_mut());
+    }
 
     // Close subrecord account
     sub_record.tag = Tag::ClosedSubRecord;

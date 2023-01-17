@@ -64,6 +64,15 @@ impl PrintProgramError for SubRegisterError {
             SubRegisterError::CannotRevoke => {
                 msg!("[+] Error: Cannot revoke")
             }
+            SubRegisterError::MissingAccount => {
+                msg!("[+] Error: Missing account")
+            }
+            SubRegisterError::MissingMintRecord => {
+                msg!("[+] Error: Missing mint record")
+            }
+            SubRegisterError::WrongMintRecord => {
+                msg!("[+] Error: Wrong mint record")
+            }
         }
     }
 }

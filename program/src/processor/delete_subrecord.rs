@@ -1,5 +1,8 @@
 //! Delete a subrecord account account
-use crate::state::{subrecord::SubRecord, Tag};
+use crate::{
+    error::SubRegisterError,
+    state::{nft_mint_record::NftMintRecord, subrecord::SubRecord, Tag},
+};
 
 use {
     bonfida_utils::{
@@ -32,6 +35,10 @@ pub struct Accounts<'a, T> {
     #[cons(writable)]
     /// The lamports target
     pub lamports_target: &'a T,
+
+    #[cons(writable)]
+    /// The mint record account
+    pub mint_record: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -44,6 +51,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             sub_domain: next_account_info(accounts_iter)?,
             sub_record: next_account_info(accounts_iter)?,
             lamports_target: next_account_info(accounts_iter)?,
+            mint_record: next_account_info(accounts_iter).ok(),
         };
 
         // Check keyss
@@ -65,6 +73,22 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
     // Check PDA derivation
     let (sub_record_key, _) = SubRecord::find_key(accounts.sub_domain.key, program_id);
     check_account_key(accounts.sub_record, &sub_record_key)?;
+
+    if let Some(mint_record) = sub_record.mint_record {
+        let mint_record_account = accounts
+            .mint_record
+            .ok_or(SubRegisterError::MissingAccount)?;
+        check_account_owner(mint_record_account, program_id)?;
+        check_account_key(mint_record_account, &mint_record)?;
+
+        let mut mint_record =
+            NftMintRecord::from_account_info(mint_record_account, Tag::NftMintRecord)?;
+        mint_record.count = mint_record
+            .count
+            .checked_sub(1)
+            .ok_or(SubRegisterError::Overflow)?;
+        mint_record.save(&mut mint_record_account.data.borrow_mut());
+    }
 
     // Close sub record account
     sub_record.tag = Tag::ClosedSubRecord;

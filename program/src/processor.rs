@@ -15,6 +15,7 @@ pub mod close_registrar;
 pub mod create_registrar;
 pub mod delete_subrecord;
 pub mod edit_registrar;
+pub mod nft_owner_revoke;
 pub mod register;
 pub mod unregister;
 
