@@ -1,7 +1,7 @@
 //! Delete a subrecord account account
 use crate::{
     error::SubRegisterError,
-    state::{nft_mint_record::NftMintRecord, subrecord::SubRecord, Tag},
+    state::{mint_record::MintRecord, subrecord::SubRecord, Tag},
 };
 
 use {
@@ -81,8 +81,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
         check_account_owner(mint_record_account, program_id)?;
         check_account_key(mint_record_account, &mint_record)?;
 
-        let mut mint_record =
-            NftMintRecord::from_account_info(mint_record_account, Tag::NftMintRecord)?;
+        let mut mint_record = MintRecord::from_account_info(mint_record_account, Tag::MintRecord)?;
         mint_record.count = mint_record
             .count
             .checked_sub(1)

@@ -3,7 +3,7 @@
 use crate::{
     cpi::Cpi,
     error::SubRegisterError,
-    state::{nft_mint_record::NftMintRecord, registry::Registrar, subrecord::SubRecord, Tag},
+    state::{mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag},
     utils::{check_metadata, check_nft_holding_and_get_mint},
 };
 
@@ -109,8 +109,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
 
     let mut sub_record = SubRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
     let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
-    let mut mint_record =
-        NftMintRecord::from_account_info(accounts.nft_mint_record, Tag::NftMintRecord)?;
+    let mut mint_record = MintRecord::from_account_info(accounts.nft_mint_record, Tag::MintRecord)?;
     let collection = registrar
         .nft_gated_collection
         .ok_or(SubRegisterError::MustHaveCollection)?;

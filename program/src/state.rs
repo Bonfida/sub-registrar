@@ -4,7 +4,7 @@ use {
     solana_program::{pubkey, pubkey::Pubkey},
 };
 
-pub mod nft_mint_record;
+pub mod mint_record;
 pub mod registry;
 pub mod schedule;
 pub mod subrecord;
@@ -26,7 +26,7 @@ pub enum Tag {
     ClosedRegistrar,
     SubRecord,
     ClosedSubRecord,
-    NftMintRecord,
+    MintRecord,
 }
 
 impl Default for Tag {

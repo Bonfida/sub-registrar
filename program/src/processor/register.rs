@@ -4,8 +4,8 @@ use crate::{
     cpi::Cpi,
     error::SubRegisterError,
     state::{
-        nft_mint_record::NftMintRecord, registry::Registrar, subrecord::SubRecord, Tag,
-        FEE_ACC_OWNER, FEE_PCT, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT,
+        mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag, FEE_ACC_OWNER,
+        FEE_PCT, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT,
     },
     utils,
     utils::{check_metadata, check_nft_holding_and_get_mint},
@@ -206,12 +206,12 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         check_account_key(nft_metadata_account, &pda)?;
 
         // Check NFT record mint
-        let (pda, nonce) = NftMintRecord::find_key(&mint, program_id);
+        let (pda, nonce) = MintRecord::find_key(&mint, program_id);
         mint_record_key = Some(pda);
         check_account_key(nft_mint_record, &pda)?;
         let mut mint_record = if nft_mint_record.data_is_empty() {
-            let mint_record = NftMintRecord::new();
-            let seeds: &[&[u8]] = &[NftMintRecord::SEEDS, &mint.to_bytes(), &[nonce]];
+            let mint_record = MintRecord::new();
+            let seeds: &[&[u8]] = &[MintRecord::SEEDS, &mint.to_bytes(), &[nonce]];
             Cpi::create_account(
                 program_id,
                 accounts.system_program,
@@ -222,7 +222,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             )?;
             mint_record
         } else {
-            NftMintRecord::from_account_info(nft_mint_record, Tag::NftMintRecord)?
+            MintRecord::from_account_info(nft_mint_record, Tag::MintRecord)?
         };
 
         if mint_record.count >= registrar.max_nft_mint {

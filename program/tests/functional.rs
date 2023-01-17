@@ -6,7 +6,7 @@ use sub_register::{
         edit_registrar, register, unregister,
     },
     state::{
-        nft_mint_record::NftMintRecord, registry::Registrar, schedule::Price, subrecord::SubRecord,
+        mint_record::MintRecord, registry::Registrar, schedule::Price, subrecord::SubRecord,
         FEE_ACC_OWNER, NAME_AUCTIONING,
     },
 };
