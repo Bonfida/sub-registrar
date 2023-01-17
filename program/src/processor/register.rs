@@ -4,8 +4,8 @@ use crate::{
     cpi::Cpi,
     error::SubRegisterError,
     state::{
-        registry::Registrar, subrecord::SubRecord, Tag, FEE_ACC_OWNER, FEE_PCT, NAME_AUCTIONING,
-        ROOT_DOMAIN_ACCOUNT,
+        nft_mint_record::NftMintRecord, registry::Registrar, subrecord::SubRecord, Tag,
+        FEE_ACC_OWNER, FEE_PCT, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT,
     },
     utils,
     utils::{check_metadata, check_nft_holding_and_get_mint},
@@ -100,6 +100,10 @@ pub struct Accounts<'a, T> {
 
     /// Optional NFT metadata account if Registrar is NFT gated
     pub nft_metadata_account: Option<&'a T>,
+
+    #[cons(writable)]
+    /// Optional NFT mint record to keep track of how many domains were created with this NFT
+    pub nft_mint_record: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -127,6 +131,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             sub_record: next_account_info(accounts_iter)?,
             nft_account: next_account_info(accounts_iter).ok(),
             nft_metadata_account: next_account_info(accounts_iter).ok(),
+            nft_mint_record: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -177,6 +182,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Handle NFT gated case firts
+    let mut mint_record_key: Option<Pubkey> = None;
     if let Some(collection) = registrar.nft_gated_collection {
         let nft_account = accounts
             .nft_account
@@ -184,6 +190,9 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         let nft_metadata_account = accounts
             .nft_metadata_account
             .ok_or(SubRegisterError::MustProvideNftMetadata)?;
+        let nft_mint_record = accounts
+            .nft_mint_record
+            .ok_or(SubRegisterError::MustProvideNftMintRecord)?;
 
         // Accounts checks
         check_account_owner(nft_account, &spl_token::ID).unwrap();
@@ -195,6 +204,35 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         // Check metadata PDA deriation
         let (pda, _) = find_metadata_account(&mint);
         check_account_key(nft_metadata_account, &pda)?;
+
+        // Check NFT record mint
+        let (pda, nonce) = NftMintRecord::find_key(&mint, program_id);
+        mint_record_key = Some(pda);
+        check_account_key(nft_mint_record, &pda)?;
+        let mut mint_record = if nft_mint_record.data_is_empty() {
+            let mint_record = NftMintRecord::new();
+            let seeds: &[&[u8]] = &[NftMintRecord::SEEDS, &mint.to_bytes(), &[nonce]];
+            Cpi::create_account(
+                program_id,
+                accounts.system_program,
+                accounts.fee_payer,
+                nft_mint_record,
+                seeds,
+                mint_record.borsh_len(),
+            )?;
+            mint_record
+        } else {
+            NftMintRecord::from_account_info(nft_mint_record, Tag::NftMintRecord)?
+        };
+
+        if mint_record.count >= registrar.max_nft_mint {
+            return Err(SubRegisterError::MintLimitReached.into());
+        }
+        mint_record.count = mint_record
+            .count
+            .checked_add(1)
+            .ok_or(SubRegisterError::Overflow)?;
+        mint_record.save(&mut nft_mint_record.data.borrow_mut());
     }
 
     // Check sub account derivation
@@ -325,7 +363,8 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Create subrecord account
-    let sub_record = SubRecord::new();
+    let mut sub_record = SubRecord::new();
+    sub_record.mint_record = mint_record_key;
     let seeds: &[&[u8]] = &[
         SubRecord::SEEDS,
         &accounts.sub_domain_account.key.to_bytes(),

@@ -33,6 +33,8 @@ pub struct Params {
     pub authority: Pubkey,
     pub price_schedule: Schedule,
     pub nft_gated_collection: Option<Pubkey>,
+    pub max_nft_mint: u8,
+    pub allow_revoke: bool,
 }
 
 #[derive(InstructionsAccount)]
@@ -124,6 +126,8 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], mut params: Params
         params.price_schedule,
         nonce,
         params.nft_gated_collection,
+        params.max_nft_mint,
+        params.allow_revoke,
     );
     Cpi::create_account(
         program_id,

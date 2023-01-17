@@ -1,6 +1,6 @@
 pub use crate::processor::{
-    admin_register, close_registrar, create_registrar, delete_subrecord, edit_registrar, register,
-    unregister,
+    admin_register, admin_revoke, close_registrar, create_registrar, delete_subrecord,
+    edit_registrar, register, unregister,
 };
 use {
     bonfida_utils::InstructionsAccount,
@@ -32,26 +32,27 @@ pub enum ProgramInstruction {
     EditRegistrar,
     /// Register a subdomain
     ///
-    /// | Index | Writable | Signer | Description                                             |
-    /// | ----------------------------------------------------------------------------------- |
-    /// | 0     | ❌        | ❌      | The system program account                              |
-    /// | 1     | ❌        | ❌      | The SPL token program account                           |
-    /// | 2     | ❌        | ❌      | The SPL name service program account                    |
-    /// | 3     | ❌        | ❌      | The rent sysvar account                                 |
-    /// | 4     | ❌        | ❌      | The name auctioning program account                     |
-    /// | 5     | ❌        | ❌      | The .sol root domain                                    |
-    /// | 6     | ❌        | ❌      | The reverse lookup class accoutn                        |
-    /// | 7     | ✅        | ❌      | The fee account of the registry                         |
-    /// | 8     | ✅        | ❌      |                                                         |
-    /// | 9     | ✅        | ❌      |                                                         |
-    /// | 10    | ✅        | ❌      |                                                         |
-    /// | 11    | ✅        | ❌      |                                                         |
-    /// | 12    | ✅        | ❌      |                                                         |
-    /// | 13    | ✅        | ✅      | The fee payer account                                   |
-    /// | 14    | ✅        | ❌      |                                                         |
-    /// | 15    | ✅        | ❌      | The subrecord account                                   |
-    /// | 16    | ❌        | ❌      | Optional NFT account if Registrar is NFT gated          |
-    /// | 17    | ❌        | ❌      | Optional NFT metadata account if Registrar is NFT gated |
+    /// | Index | Writable | Signer | Description                                                                           |
+    /// | ----------------------------------------------------------------------------------------------------------------- |
+    /// | 0     | ❌        | ❌      | The system program account                                                            |
+    /// | 1     | ❌        | ❌      | The SPL token program account                                                         |
+    /// | 2     | ❌        | ❌      | The SPL name service program account                                                  |
+    /// | 3     | ❌        | ❌      | The rent sysvar account                                                               |
+    /// | 4     | ❌        | ❌      | The name auctioning program account                                                   |
+    /// | 5     | ❌        | ❌      | The .sol root domain                                                                  |
+    /// | 6     | ❌        | ❌      | The reverse lookup class accoutn                                                      |
+    /// | 7     | ✅        | ❌      | The fee account of the registry                                                       |
+    /// | 8     | ✅        | ❌      |                                                                                       |
+    /// | 9     | ✅        | ❌      |                                                                                       |
+    /// | 10    | ✅        | ❌      |                                                                                       |
+    /// | 11    | ✅        | ❌      |                                                                                       |
+    /// | 12    | ✅        | ❌      |                                                                                       |
+    /// | 13    | ✅        | ✅      | The fee payer account                                                                 |
+    /// | 14    | ✅        | ❌      |                                                                                       |
+    /// | 15    | ✅        | ❌      | The subrecord account                                                                 |
+    /// | 16    | ❌        | ❌      | Optional NFT account if Registrar is NFT gated                                        |
+    /// | 17    | ❌        | ❌      | Optional NFT metadata account if Registrar is NFT gated                               |
+    /// | 18    | ❌        | ❌      | Optional NFT mint record to keep track of how many domains were created with this NFT |
     Register,
     /// Unregister a subdomain
     ///
@@ -102,6 +103,17 @@ pub enum ProgramInstruction {
     /// | 1     | ✅        | ❌      | The sub record account |
     /// | 2     | ✅        | ❌      | The lamports target    |
     DeleteSubrecord,
+    /// Allow the authority of a `Registrar` to revoke a subdomain
+    ///
+    /// | Index | Writable | Signer | Description                     |
+    /// | ----------------------------------------------------------- |
+    /// | 0     | ❌        | ❌      | The registrar account           |
+    /// | 1     | ✅        | ❌      | The subdomain account to create |
+    /// | 2     | ✅        | ❌      | The subrecord account           |
+    /// | 3     | ❌        | ❌      | The current sub domain owner    |
+    /// | 4     | ✅        | ✅      | The fee payer account           |
+    /// | 5     | ❌        | ❌      | The name service program ID     |
+    AdminRevoke,
 }
 pub fn create_registrar(
     accounts: create_registrar::Accounts<Pubkey>,
@@ -141,4 +153,11 @@ pub fn delete_subrecord(
     params: delete_subrecord::Params,
 ) -> Instruction {
     accounts.get_instruction(crate::ID, ProgramInstruction::DeleteSubrecord as u8, params)
+}
+
+pub fn admin_revoke(
+    accounts: admin_revoke::Accounts<Pubkey>,
+    params: admin_revoke::Params,
+) -> Instruction {
+    accounts.get_instruction(crate::ID, ProgramInstruction::AdminRevoke as u8, params)
 }

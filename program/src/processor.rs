@@ -10,6 +10,7 @@ use {
 use crate::instruction::ProgramInstruction;
 
 pub mod admin_register;
+pub mod admin_revoke;
 pub mod close_registrar;
 pub mod create_registrar;
 pub mod delete_subrecord;
@@ -73,6 +74,12 @@ impl Processor {
                 let params = delete_subrecord::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 delete_subrecord::process(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminRevoke => {
+                msg!("[+] Instruction: Admin revoke instruction");
+                let params = admin_revoke::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                admin_revoke::process(program_id, accounts, params)?;
             }
         }
 

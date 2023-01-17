@@ -32,6 +32,12 @@ pub enum SubRegisterError {
     MustHaveCollection,
     #[error("Invalid collection")]
     InvalidCollection,
+    #[error("Must provide mint record account")]
+    MustProvideNftMintRecord,
+    #[error("Mint limit reach")]
+    MintLimitReached,
+    #[error("Cannot revoke")]
+    CannotRevoke,
 }
 
 impl From<SubRegisterError> for ProgramError {

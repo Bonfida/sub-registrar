@@ -55,6 +55,15 @@ impl PrintProgramError for SubRegisterError {
             SubRegisterError::InvalidCollection => {
                 msg!("[+] Error: Invalid collection")
             }
+            SubRegisterError::MustProvideNftMintRecord => {
+                msg!("[+] Error: Must provide NFT mint record")
+            }
+            SubRegisterError::MintLimitReached => {
+                msg!("[+] Error: Mint limit reached")
+            }
+            SubRegisterError::CannotRevoke => {
+                msg!("[+] Error: Cannot revoke")
+            }
         }
     }
 }

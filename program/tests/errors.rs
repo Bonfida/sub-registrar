@@ -357,6 +357,8 @@ async fn test_errors() {
     // - Register with unverified collection
     // - Unregister with wrong sub record
     // - Delete subrecord passing wrong name
+    // - Try to mint more than max NFT mint TODO
+    // - Try to revoke in non revokable registrar TODO
     ////////////////////////////////
 
     // Test: Non .sol domain for registry

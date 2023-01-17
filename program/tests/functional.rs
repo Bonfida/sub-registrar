@@ -2,11 +2,12 @@ use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
     instruction::{
-        admin_register, close_registrar, create_registrar, delete_subrecord, edit_registrar,
-        register, unregister,
+        admin_register, admin_revoke, close_registrar, create_registrar, delete_subrecord,
+        edit_registrar, register, unregister,
     },
     state::{
-        registry::Registrar, schedule::Price, subrecord::SubRecord, FEE_ACC_OWNER, NAME_AUCTIONING,
+        nft_mint_record::NftMintRecord, registry::Registrar, schedule::Price, subrecord::SubRecord,
+        FEE_ACC_OWNER, NAME_AUCTIONING,
     },
 };
 use {
@@ -210,6 +211,8 @@ async fn test_functional() {
             mint,
             fee_account: *alice_fee_account,
             nft_gated_collection: None,
+            max_nft_mint: 0,
+            allow_revoke: false,
             authority: alice.pubkey(),
             price_schedule: vec![
                 Price {
@@ -235,6 +238,7 @@ async fn test_functional() {
             registrar: &registry_key,
         },
         edit_registrar::Params {
+            new_max_nft_mint: Some(1),
             new_collection: None,
             new_authority: None,
             new_mint: None,
@@ -270,6 +274,7 @@ async fn test_functional() {
         edit_registrar::Params {
             new_collection: None,
             new_authority: None,
+            new_max_nft_mint: None,
             new_mint: None,
             disable_nft_gate: false,
             new_fee_account: None,
@@ -315,6 +320,7 @@ async fn test_functional() {
             nft_account: None,
             nft_metadata_account: None,
             sub_record: &subrecord_key,
+            nft_mint_record: None,
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -360,9 +366,10 @@ async fn test_functional() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
+            nft_mint_record: None,
             sub_record: &subrecord_key_to_unreg_1.clone(),
         },
         register::Params {
@@ -473,7 +480,9 @@ async fn test_functional() {
             spl_name_program_id: &spl_name_service::ID,
         },
         create_registrar::Params {
+            allow_revoke: true,
             nft_gated_collection: Some(common::metadata::COLLECTION_KEY),
+            max_nft_mint: 1,
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
@@ -498,6 +507,8 @@ async fn test_functional() {
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (nft_mint_record, _) =
+        NftMintRecord::find_key(&common::metadata::NFT_MINT, &sub_register::ID);
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
@@ -519,6 +530,7 @@ async fn test_functional() {
             nft_account: Some(&bob_nft_account),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
             sub_record: &subrecord_key,
+            nft_mint_record: Some(&nft_mint_record),
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -542,6 +554,7 @@ async fn test_functional() {
             new_mint: None,
             new_fee_account: None,
             new_price_schedule: None,
+            new_max_nft_mint: None,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -572,6 +585,7 @@ async fn test_functional() {
             nft_account: Some(&bob_nft_account),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
             sub_record: &subrecord_key,
+            nft_mint_record: Some(&nft_mint_record),
         },
         register::Params {
             domain: format!("\0{}", sub_domain),
@@ -601,6 +615,58 @@ async fn test_functional() {
         delete_subrecord::Params {},
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
+        .await
+        .unwrap();
+
+    // Test: revoke sub
+    let sub_domain = "some-test-1343123422ghjk345".to_string();
+    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    // Bob registers a subdomain
+    let ix = register(
+        register::Accounts {
+            name_auctioning_program: &NAME_AUCTIONING,
+            system_program: &system_program::ID,
+            spl_token_program: &spl_token::ID,
+            spl_name_service: &spl_name_service::ID,
+            rent_sysvar: &sysvar::rent::id(),
+            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            fee_account: alice_fee_account,
+            fee_source: &bob_ata,
+            registrar: &registry_key,
+            parent_domain_account: &name_key,
+            sub_domain_account: &sub_domain_key,
+            sub_reverse_account: &sub_reverse_key,
+            fee_payer: &bob.pubkey(),
+            bonfida_fee_account,
+            nft_account: Some(&bob_nft_account),
+            nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
+            sub_record: &subrecord_key,
+            nft_mint_record: Some(&nft_mint_record),
+        },
+        register::Params {
+            domain: format!("\0{}", sub_domain),
+        },
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
+        .await
+        .unwrap();
+    let ix = admin_revoke(
+        admin_revoke::Accounts {
+            registrar: &registry_key,
+            sub_domain_account: &sub_domain_key,
+            authority: &alice.pubkey(),
+            spl_name_service: &spl_name_service::ID,
+            sub_record: &subrecord_key,
+            name_class: &Pubkey::default(),
+            sub_owner: &bob.pubkey(),
+            parent_domain: &name_key,
+        },
+        admin_revoke::Params {},
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
         .await
         .unwrap();
 }

@@ -35,6 +35,7 @@ pub struct Params {
     pub new_price_schedule: Option<Schedule>,
     pub new_collection: Option<Pubkey>,
     pub disable_nft_gate: bool,
+    pub new_max_nft_mint: Option<u8>,
 }
 
 #[derive(InstructionsAccount)]
@@ -105,6 +106,10 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
 
     if params.disable_nft_gate {
         registrar.nft_gated_collection = None;
+    }
+
+    if let Some(new_max_nft_mint) = params.new_max_nft_mint {
+        registrar.max_nft_mint = new_max_nft_mint;
     }
 
     // Handle realloc
