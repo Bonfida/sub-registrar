@@ -33,8 +33,6 @@ pub struct Params {
     pub new_mint: Option<Pubkey>,
     pub new_fee_account: Option<Pubkey>,
     pub new_price_schedule: Option<Schedule>,
-    pub new_collection: Option<Pubkey>,
-    pub disable_nft_gate: bool,
     pub new_max_nft_mint: Option<u8>,
 }
 
@@ -95,17 +93,9 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         registrar.fee_account = new_fee_account;
     }
 
-    if let Some(new_collection) = params.new_collection {
-        registrar.nft_gated_collection = Some(new_collection);
-    }
-
     if let Some(mut new_price_schedule) = params.new_price_schedule {
         new_price_schedule.sort_by_key(|x| x.length);
         registrar.price_schedule = new_price_schedule;
-    }
-
-    if params.disable_nft_gate {
-        registrar.nft_gated_collection = None;
     }
 
     if let Some(new_max_nft_mint) = params.new_max_nft_mint {

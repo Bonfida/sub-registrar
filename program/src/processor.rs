@@ -82,6 +82,12 @@ impl Processor {
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 admin_revoke::process(program_id, accounts, params)?;
             }
+            ProgramInstruction::NftOwnerRevoke => {
+                msg!("[+] Instruction: NFT owner revoke instruction");
+                let params = nft_owner_revoke::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                nft_owner_revoke::process(program_id, accounts, params)?;
+            }
         }
 
         Ok(())

@@ -54,7 +54,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             mint_record: next_account_info(accounts_iter).ok(),
         };
 
-        // Check keyss
+        // Check keys
 
         // Check owners
         check_account_owner(accounts.sub_domain, &system_program::ID)?;
