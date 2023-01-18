@@ -22,8 +22,11 @@ impl MintRecord {
         }
     }
 
-    pub fn find_key(mint: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::find_program_address(&[MintRecord::SEEDS, &mint.to_bytes()], program_id)
+    pub fn find_key(mint: &Pubkey, registrar: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(
+            &[MintRecord::SEEDS, &registrar.to_bytes(), &mint.to_bytes()],
+            program_id,
+        )
     }
 
     pub fn save(&self, mut dst: &mut [u8]) {

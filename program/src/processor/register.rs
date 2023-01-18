@@ -206,12 +206,17 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         check_account_key(nft_metadata_account, &pda)?;
 
         // Check NFT record mint
-        let (pda, nonce) = MintRecord::find_key(&mint, program_id);
+        let (pda, nonce) = MintRecord::find_key(&mint, accounts.registrar.key, program_id);
         mint_record_key = Some(pda);
         check_account_key(nft_mint_record, &pda)?;
         let mut mint_record = if nft_mint_record.data_is_empty() {
             let mint_record = MintRecord::new();
-            let seeds: &[&[u8]] = &[MintRecord::SEEDS, &mint.to_bytes(), &[nonce]];
+            let seeds: &[&[u8]] = &[
+                MintRecord::SEEDS,
+                &accounts.registrar.key.to_bytes(),
+                &mint.to_bytes(),
+                &[nonce],
+            ];
             Cpi::create_account(
                 program_id,
                 accounts.system_program,

@@ -1256,7 +1256,11 @@ async fn test_state() {
     let sub_to_revoke = sub_domain_key.clone();
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
-    let (mint_record_key, _) = MintRecord::find_key(&common::metadata::NFT_MINT, &sub_register::ID);
+    let (mint_record_key, _) = MintRecord::find_key(
+        &common::metadata::NFT_MINT,
+        &registry_key,
+        &sub_register::ID,
+    );
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
@@ -1315,7 +1319,11 @@ async fn test_state() {
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
-    let (mint_record_key, _) = MintRecord::find_key(&common::metadata::NFT_MINT, &sub_register::ID);
+    let (mint_record_key, _) = MintRecord::find_key(
+        &common::metadata::NFT_MINT,
+        &registry_key,
+        &sub_register::ID,
+    );
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
@@ -1454,7 +1462,11 @@ async fn test_state() {
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
-    let (mint_record_key, _) = MintRecord::find_key(&common::metadata::NFT_MINT, &sub_register::ID);
+    let (mint_record_key, _) = MintRecord::find_key(
+        &common::metadata::NFT_MINT,
+        &registry_key,
+        &sub_register::ID,
+    );
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
@@ -1538,7 +1550,11 @@ async fn test_state() {
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
-    let (mint_record_key, _) = MintRecord::find_key(&common::metadata::NFT_MINT, &sub_register::ID);
+    let (mint_record_key, _) = MintRecord::find_key(
+        &common::metadata::NFT_MINT,
+        &registry_key,
+        &sub_register::ID,
+    );
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
