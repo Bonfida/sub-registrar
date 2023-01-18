@@ -1,7 +1,7 @@
 //! Delete a subrecord account account
 use crate::{
     error::SubRegisterError,
-    state::{mint_record::MintRecord, subrecord::SubRecord, Tag},
+    state::{mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag},
 };
 
 use {
@@ -24,6 +24,9 @@ pub struct Params {}
 
 #[derive(InstructionsAccount)]
 pub struct Accounts<'a, T> {
+    #[cons(writable)]
+    pub registrar: &'a T,
+
     #[cons(writable)]
     /// The sub domain account
     pub sub_domain: &'a T,
@@ -48,6 +51,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     ) -> Result<Self, ProgramError> {
         let accounts_iter = &mut accounts.iter();
         let accounts = Accounts {
+            registrar: next_account_info(accounts_iter)?,
             sub_domain: next_account_info(accounts_iter)?,
             sub_record: next_account_info(accounts_iter)?,
             lamports_target: next_account_info(accounts_iter)?,
@@ -57,6 +61,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         // Check keys
 
         // Check owners
+        check_account_owner(accounts.registrar, program_id)?;
         check_account_owner(accounts.sub_domain, &system_program::ID)?;
         check_account_owner(accounts.sub_record, program_id)?;
 
@@ -69,6 +74,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let mut sub_record = SubRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
+    let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
     // Check PDA derivation
     let (sub_record_key, _) = SubRecord::find_key(accounts.sub_domain.key, program_id);
@@ -98,6 +104,13 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
 
     **target_lamports += **lamports;
     **lamports = 0;
+
+    // Edit Registrar
+    registrar.total_sub_created = registrar
+        .total_sub_created
+        .checked_sub(1)
+        .ok_or(SubRegisterError::Overflow)?;
+    registrar.save(&mut accounts.registrar.data.borrow_mut());
 
     Ok(())
 }

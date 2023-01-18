@@ -363,7 +363,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Create subrecord account
-    let mut sub_record = SubRecord::new();
+    let mut sub_record = SubRecord::new(*accounts.registrar.key);
     sub_record.mint_record = mint_record_key;
     let seeds: &[&[u8]] = &[
         SubRecord::SEEDS,

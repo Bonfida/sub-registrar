@@ -82,7 +82,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(accounts.spl_name_program_id, &spl_name_service::ID)?;
 
         // Check owners
-        check_account_owner(accounts.registrar, &system_program::ID)?;
+        check_account_owner(accounts.registrar, &system_program::ID).unwrap();
         check_account_owner(accounts.domain_name_account, &spl_name_service::ID)?;
 
         // Check signer

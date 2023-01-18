@@ -1,10 +1,12 @@
-//! Allow the authority of a `Registrar` to revoke a subdomain
+//! In the case of ...
 
 use crate::{
-    cpi::Cpi,
     error::SubRegisterError,
-    state::{registry::Registrar, subrecord::SubRecord, Tag},
+    state::{mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag},
+    utils::{check_metadata, check_nft_holding_and_get_mint},
 };
+
+use super::revoke_unchecked;
 
 use {
     bonfida_utils::{
@@ -12,10 +14,10 @@ use {
         BorshSize, InstructionsAccount,
     },
     borsh::{BorshDeserialize, BorshSerialize},
+    mpl_token_metadata::pda::find_metadata_account,
     solana_program::{
         account_info::{next_account_info, AccountInfo},
         entrypoint::ProgramResult,
-        program::invoke_signed,
         program_error::ProgramError,
         pubkey::Pubkey,
     },
@@ -46,7 +48,15 @@ pub struct Accounts<'a, T> {
 
     #[cons(writable, signer)]
     /// The fee payer account
-    pub authority: &'a T,
+    pub nft_owner: &'a T,
+
+    /// The NFT account
+    pub nft_account: &'a T,
+
+    pub nft_metadata: &'a T,
+
+    #[cons(writable)]
+    pub nft_mint_record: &'a T,
 
     /// Name class
     pub name_class: &'a T,
@@ -67,7 +77,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             sub_record: next_account_info(accounts_iter)?,
             sub_owner: next_account_info(accounts_iter)?,
             parent_domain: next_account_info(accounts_iter)?,
-            authority: next_account_info(accounts_iter)?,
+            nft_owner: next_account_info(accounts_iter)?,
+            nft_account: next_account_info(accounts_iter)?,
+            nft_metadata: next_account_info(accounts_iter)?,
+            nft_mint_record: next_account_info(accounts_iter)?,
             name_class: next_account_info(accounts_iter)?,
             spl_name_service: next_account_info(accounts_iter)?,
         };
@@ -81,9 +94,12 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_owner(accounts.sub_domain_account, &spl_name_service::ID)?;
         check_account_owner(accounts.sub_record, program_id)?;
         check_account_owner(accounts.parent_domain, &spl_name_service::ID)?;
+        check_account_owner(accounts.nft_account, &spl_token::ID)?;
+        check_account_owner(accounts.nft_metadata, &mpl_token_metadata::ID)?;
+        check_account_owner(accounts.nft_mint_record, program_id)?;
 
         // Check signer
-        check_signer(accounts.authority)?;
+        check_signer(accounts.nft_owner)?;
 
         Ok(accounts)
     }
@@ -92,72 +108,42 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let mut sub_record = SubRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
-    let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
+    let sub_record = SubRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
+    let registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
+    let mint_record = MintRecord::from_account_info(accounts.nft_mint_record, Tag::MintRecord)?;
+    let collection = registrar
+        .nft_gated_collection
+        .ok_or(SubRegisterError::MustHaveCollection)?;
 
+    let mint = check_nft_holding_and_get_mint(accounts.nft_account, accounts.nft_owner.key)?;
+    check_metadata(accounts.nft_metadata, &collection)?;
+
+    let (pda, _) = find_metadata_account(&mint);
+    check_account_key(accounts.nft_metadata, &pda)?;
     let (subrecord_key, _) = SubRecord::find_key(accounts.sub_domain_account.key, program_id);
 
-    check_account_key(accounts.authority, &registrar.authority)?;
     check_account_key(accounts.sub_record, &subrecord_key)?;
     check_account_key(accounts.parent_domain, &registrar.domain_account)?;
 
-    if !registrar.allow_revoke {
-        return Err(SubRegisterError::CannotRevoke.into());
+    if let Some(sub_mint_rec) = sub_record.mint_record {
+        check_account_key(accounts.nft_mint_record, &sub_mint_rec)?;
+    } else {
+        return Err(SubRegisterError::WrongMintRecord.into());
     }
 
-    // Transfer to registrar
-    Cpi::transfer_subdomain(
-        &registrar,
+    revoke_unchecked::revoke_unchecked(
+        registrar,
+        sub_record,
+        Some(mint_record),
         accounts.registrar,
         accounts.sub_domain_account,
         accounts.parent_domain,
         accounts.name_class,
         accounts.spl_name_service,
+        accounts.sub_record,
+        accounts.nft_owner,
+        Some(accounts.nft_mint_record),
     )?;
-
-    // Unregister domain
-    let seeds: &[&[u8]] = &[
-        Registrar::SEEDS,
-        &registrar.domain_account.to_bytes(),
-        &registrar.authority.to_bytes(),
-        &[registrar.nonce],
-    ];
-    let ix = spl_name_service::instruction::delete(
-        spl_name_service::ID,
-        *accounts.sub_domain_account.key,
-        *accounts.registrar.key,
-        *accounts.registrar.key,
-    )?;
-    invoke_signed(
-        &ix,
-        &[
-            accounts.spl_name_service.clone(),
-            accounts.sub_domain_account.clone(),
-            accounts.registrar.clone(),
-            accounts.registrar.clone(),
-        ],
-        &[seeds],
-    )?;
-
-    // Close subrecord account
-    sub_record.tag = Tag::ClosedSubRecord;
-    sub_record.save(&mut accounts.sub_record.data.borrow_mut());
-
-    // Zero out lamports of subrecord account
-    let mut sub_record_lamports = accounts.sub_record.lamports.borrow_mut();
-    let mut target_lamports = accounts.authority.lamports.borrow_mut();
-
-    **target_lamports += **sub_record_lamports;
-    **sub_record_lamports = 0;
-
-    // Decrement nb sub created
-    registrar.total_sub_created = registrar
-        .total_sub_created
-        .checked_sub(1)
-        .ok_or(SubRegisterError::Overflow)?;
-
-    // Serialize state
-    registrar.save(&mut accounts.registrar.data.borrow_mut());
 
     Ok(())
 }

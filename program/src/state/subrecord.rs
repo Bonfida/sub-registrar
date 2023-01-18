@@ -9,15 +9,17 @@ use {
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Eq, BorshSize)]
 pub struct SubRecord {
     pub tag: Tag,
+    pub registrar: Pubkey,
     pub mint_record: Option<Pubkey>,
 }
 
 impl SubRecord {
     pub const SEEDS: &'static [u8; 9] = b"subrecord";
 
-    pub fn new() -> Self {
+    pub fn new(registrar: Pubkey) -> Self {
         Self {
             tag: Tag::SubRecord,
+            registrar,
             mint_record: None,
         }
     }
@@ -42,6 +44,6 @@ impl SubRecord {
 
 impl Default for SubRecord {
     fn default() -> Self {
-        Self::new()
+        Self::new(Pubkey::default())
     }
 }
