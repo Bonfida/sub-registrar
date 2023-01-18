@@ -46,7 +46,7 @@ pub fn revoke_unchecked<'a>(
         spl_name_service::ID,
         *subdomain_account.key,
         *registrar_account.key,
-        *registrar_account.key,
+        *lamport_target_account.key,
     )?;
     invoke_signed(
         &ix,
@@ -54,7 +54,7 @@ pub fn revoke_unchecked<'a>(
             spl_name_service_account.clone(),
             subdomain_account.clone(),
             registrar_account.clone(),
-            registrar_account.clone(),
+            lamport_target_account.clone(),
         ],
         &[seeds],
     )?;
