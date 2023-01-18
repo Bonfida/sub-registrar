@@ -113,6 +113,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
         (None, Some(_)) | (Some(_), None) => return Err(SubRegisterError::MissingMintRecord.into()),
         (None, None) => (None, None),
         (Some(_), Some(mint_record_account)) => {
+            check_account_owner(mint_record_account, program_id)?;
             let mint_record = MintRecord::from_account_info(mint_record_account, Tag::MintRecord)?;
             (Some(mint_record), accounts.mint_record)
         }
