@@ -17,13 +17,16 @@ pub struct Registrar {
     pub mint: Pubkey,
     pub domain_account: Pubkey,
     pub total_sub_created: u64,
-    pub price_schedule: schedule::Schedule,
     pub nft_gated_collection: Option<Pubkey>,
+    pub max_nft_mint: u8,
+    pub allow_revoke: bool,
+    pub price_schedule: schedule::Schedule,
 }
 
 impl Registrar {
     pub const SEEDS: &'static [u8; 9] = b"registrar";
 
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         authority: &Pubkey,
         fee_account: &Pubkey,
@@ -32,6 +35,8 @@ impl Registrar {
         price_schedule: schedule::Schedule,
         nonce: u8,
         nft_gated_collection: Option<Pubkey>,
+        max_nft_mint: u8,
+        allow_revoke: bool,
     ) -> Self {
         Self {
             tag: super::Tag::Registrar,
@@ -43,6 +48,8 @@ impl Registrar {
             total_sub_created: 0,
             price_schedule,
             nft_gated_collection,
+            max_nft_mint,
+            allow_revoke,
         }
     }
 

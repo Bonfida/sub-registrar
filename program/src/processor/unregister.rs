@@ -2,7 +2,7 @@
 
 use crate::{
     error::SubRegisterError,
-    state::{registry::Registrar, subrecord::SubRecord, Tag},
+    state::{mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag},
 };
 
 use {
@@ -49,6 +49,9 @@ pub struct Accounts<'a, T> {
     #[cons(writable, signer)]
     /// The fee payer account
     pub domain_owner: &'a T,
+
+    #[cons(writable)]
+    pub mint_record: Option<&'a T>,
 }
 
 impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
@@ -64,6 +67,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             sub_domain_account: next_account_info(accounts_iter)?,
             sub_record: next_account_info(accounts_iter)?,
             domain_owner: next_account_info(accounts_iter)?,
+            mint_record: next_account_info(accounts_iter).ok(),
         };
 
         // Check keys
@@ -113,6 +117,22 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
         ],
     )?;
 
+    // Handle NFT mint record
+    if let Some(mint_record) = sub_record.mint_record {
+        let mint_record_account = accounts
+            .mint_record
+            .ok_or(SubRegisterError::MissingAccount)?;
+        check_account_owner(mint_record_account, program_id)?;
+        check_account_key(mint_record_account, &mint_record)?;
+
+        let mut mint_record = MintRecord::from_account_info(mint_record_account, Tag::MintRecord)?;
+        mint_record.count = mint_record
+            .count
+            .checked_sub(1)
+            .ok_or(SubRegisterError::Overflow)?;
+        mint_record.save(&mut mint_record_account.data.borrow_mut());
+    }
+
     // Close subrecord account
     sub_record.tag = Tag::ClosedSubRecord;
     sub_record.save(&mut accounts.sub_record.data.borrow_mut());
@@ -124,7 +144,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
     **target_lamports += **sub_record_lamports;
     **sub_record_lamports = 0;
 
-    // Increment nb sub created
+    // Decrement nb sub created
     registrar.total_sub_created = registrar
         .total_sub_created
         .checked_sub(1)

@@ -15,7 +15,11 @@ pub mod create_registrar;
 pub mod delete_subrecord;
 pub mod edit_registrar;
 pub mod register;
+mod revoke;
 pub mod unregister;
+
+pub use revoke::admin_revoke;
+pub use revoke::nft_owner_revoke;
 
 pub struct Processor {}
 
@@ -73,6 +77,18 @@ impl Processor {
                 let params = delete_subrecord::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 delete_subrecord::process(program_id, accounts, params)?;
+            }
+            ProgramInstruction::AdminRevoke => {
+                msg!("[+] Instruction: Admin revoke instruction");
+                let params = revoke::admin_revoke::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                revoke::admin_revoke::process(program_id, accounts, params)?;
+            }
+            ProgramInstruction::NftOwnerRevoke => {
+                msg!("[+] Instruction: NFT owner revoke instruction");
+                let params = revoke::nft_owner_revoke::Params::try_from_slice(instruction_data)
+                    .map_err(|_| ProgramError::InvalidInstructionData)?;
+                revoke::nft_owner_revoke::process(program_id, accounts, params)?;
             }
         }
 

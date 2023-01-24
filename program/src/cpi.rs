@@ -1,8 +1,10 @@
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, msg, program::invoke_signed,
-    program_error::ProgramError, program_pack::Pack, pubkey::Pubkey, rent::Rent,
-    system_instruction::create_account, sysvar::Sysvar,
+    account_info::AccountInfo, entrypoint::ProgramResult, instruction::AccountMeta, msg,
+    program::invoke_signed, program_error::ProgramError, program_pack::Pack, pubkey::Pubkey,
+    rent::Rent, system_instruction::create_account, sysvar::Sysvar,
 };
+
+use crate::state::registry::Registrar;
 
 #[allow(missing_docs)]
 pub struct Cpi {}
@@ -82,6 +84,47 @@ impl Cpi {
             ],
             &[signer_seeds],
         )?;
+        Ok(())
+    }
+
+    pub fn transfer_subdomain<'a>(
+        registrar: &Registrar,
+        registrar_account: &AccountInfo<'a>,
+        sub_account: &AccountInfo<'a>,
+        parent_account: &AccountInfo<'a>,
+        name_class: &AccountInfo<'a>,
+        spl_name_service: &AccountInfo<'a>,
+    ) -> Result<(), ProgramError> {
+        let mut ix = spl_name_service::instruction::transfer(
+            spl_name_service::ID,
+            *registrar_account.key,
+            *sub_account.key,
+            *registrar_account.key,
+            None,
+        )?;
+        ix.accounts
+            .push(AccountMeta::new_readonly(*name_class.key, false));
+        ix.accounts
+            .push(AccountMeta::new_readonly(*parent_account.key, false));
+        let seeds: &[&[u8]] = &[
+            Registrar::SEEDS,
+            &registrar.domain_account.to_bytes(),
+            &registrar.authority.to_bytes(),
+            &[registrar.nonce],
+        ];
+        invoke_signed(
+            &ix,
+            &[
+                spl_name_service.clone(),
+                registrar_account.clone(),
+                sub_account.clone(),
+                parent_account.clone(),
+                name_class.clone(),
+                registrar_account.clone(),
+            ],
+            &[seeds],
+        )?;
+
         Ok(())
     }
 }
