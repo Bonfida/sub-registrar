@@ -6,3 +6,6 @@ __pycache__
 .env
 .env.production
 .env.development
+*.woff2
+*.woff
+*.ttf
