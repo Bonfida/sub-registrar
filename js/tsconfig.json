@@ -27,6 +27,6 @@
     },
     "resolveJsonModule": true
   },
-  "include": ["src/*", "src/.ts"],
+  "include": ["src/*", "src/.ts", "src/state/index.ts"],
   "exclude": ["src/**/*.test.ts", "**/node_modules", "dist"]
 }

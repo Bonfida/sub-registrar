@@ -1,20 +1,16 @@
 import { deserialize, Schema } from "borsh";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
+import { Tag } from "./tag";
 
-export enum Tag {
-  Uninitialized = 0,
-  Initialized = 1,
-}
-
-export class ExampleState {
-  static SEED = "example_seed";
+export class MintRecord {
+  static SEED = "nft_mint_record";
   tag: Tag;
-  nonce: number;
+  count: number;
 
   static schema: Schema = new Map([
     [
-      ExampleState,
+      MintRecord,
       {
         kind: "struct",
         fields: [
@@ -27,11 +23,11 @@ export class ExampleState {
 
   constructor(obj: { tag: BN; nonce: number; owner: Uint8Array }) {
     this.tag = obj.tag.toNumber() as Tag;
-    this.nonce = obj.nonce;
+    this.count = obj.nonce;
   }
 
-  static deserialize(data: Buffer): ExampleState {
-    return deserialize(this.schema, ExampleState, data);
+  static deserialize(data: Buffer): MintRecord {
+    return deserialize(this.schema, MintRecord, data);
   }
 
   static async retrieve(connection: Connection, key: PublicKey) {
@@ -41,9 +37,9 @@ export class ExampleState {
     }
     return this.deserialize(accountInfo.data);
   }
-  static async findKey(programId: PublicKey) {
-    return await PublicKey.findProgramAddress(
-      [Buffer.from(ExampleState.SEED)],
+  static findKey(registrar: PublicKey, mint: PublicKey, programId: PublicKey) {
+    return PublicKey.findProgramAddressSync(
+      [Buffer.from(MintRecord.SEED), registrar.toBuffer(), mint.toBuffer()],
       programId
     );
   }
