@@ -24,7 +24,7 @@ pub fn get_domain_price(domain: String, schedule: &Schedule) -> u64 {
 }
 
 pub fn get_subdomain_key(ui_subdomain: String, parent: &Pubkey) -> Pubkey {
-    let domain = format!("\0{}", ui_subdomain);
+    let domain = format!("\0{ui_subdomain}");
     let hashed_name = hashv(&[(HASH_PREFIX.to_owned() + &domain).as_bytes()])
         .as_ref()
         .to_vec();

@@ -2,10 +2,9 @@
 
 use crate::{
     error::SubRegisterError,
+    revoke_unchecked,
     state::{mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag},
 };
-
-use super::revoke_unchecked;
 
 use {
     bonfida_utils::{

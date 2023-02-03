@@ -8,6 +8,7 @@ use solana_sdk::account::Account;
 use solana_sdk::signature::Signer;
 use solana_sdk::{signature::Keypair, transaction::Transaction};
 use spl_token::state::Mint;
+use sub_register::state::schedule::Schedule;
 
 // Utils
 pub async fn sign_send_instructions(
@@ -61,4 +62,12 @@ const CHARSET: &str = "1234567890";
 
 pub fn random_string() -> String {
     random_string::generate(10, CHARSET)
+}
+
+pub fn convert_schedule(schedule: Schedule) -> Vec<Vec<u64>> {
+    let mut res = vec![];
+    for x in schedule {
+        res.push(vec![x.length, x.price])
+    }
+    res
 }

@@ -20,3 +20,14 @@ impl Default for Price {
 
 // Assumes the `Schedule` is ordered in ascending order on the `Price.length`
 pub type Schedule = Vec<Price>;
+
+pub fn schedule_from_params(params: Vec<Vec<u64>>) -> Schedule {
+    let mut schedule = Schedule::new();
+    for x in params {
+        schedule.push(Price {
+            length: x[0],
+            price: x[1],
+        });
+    }
+    schedule
+}

@@ -30,7 +30,7 @@ pub mod common;
 #[tokio::test]
 async fn test_errors() {
     // Create program and test environment
-    use common::utils::{random_string, sign_send_instructions};
+    use common::utils::{convert_schedule, random_string, sign_send_instructions};
 
     // Alice owns a .sol and creates the registry
     let alice = Keypair::new();
@@ -274,7 +274,7 @@ async fn test_errors() {
             authority: alice.pubkey(),
             allow_revoke: false,
             max_nft_mint: 0,
-            price_schedule: vec![
+            price_schedule: convert_schedule(vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -295,7 +295,7 @@ async fn test_errors() {
                     length: 5,
                     price: 10_000_000_001,
                 },
-            ],
+            ]),
             nft_gated_collection: None,
         },
     );
@@ -387,7 +387,7 @@ async fn test_errors() {
             nft_gated_collection: None,
             max_nft_mint: 0,
             allow_revoke: false,
-            price_schedule: vec![
+            price_schedule: convert_schedule(vec![
                 Price {
                     length: 1,
                     price: 10_000_000_001,
@@ -396,7 +396,7 @@ async fn test_errors() {
                     length: 2,
                     price: 10_000_000_001,
                 },
-            ],
+            ]),
         },
     );
     let result = sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice]).await;
@@ -415,7 +415,7 @@ async fn test_errors() {
             new_mint: None,
             new_fee_account: None,
             new_max_nft_mint: None,
-            new_price_schedule: Some(vec![
+            new_price_schedule: Some(convert_schedule(vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -428,7 +428,7 @@ async fn test_errors() {
                     length: 3,
                     price: 5_000_000,
                 },
-            ]),
+            ])),
         },
     );
     let result = sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&fake_authority]).await;
@@ -786,7 +786,7 @@ async fn test_errors() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: vec![
+            price_schedule: convert_schedule(vec![
                 Price {
                     length: 2,
                     price: 10_000_000,
@@ -795,7 +795,7 @@ async fn test_errors() {
                     length: 1,
                     price: 10_000_000,
                 },
-            ],
+            ]),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -934,7 +934,7 @@ async fn test_errors() {
                     mint,
                     fee_account: *alice_fee_account,
                     authority: alice.pubkey(),
-                    price_schedule: vec![
+                    price_schedule: convert_schedule(vec![
                         Price {
                             length: 2,
                             price: 10_000_000,
@@ -943,7 +943,7 @@ async fn test_errors() {
                             length: 1,
                             price: 10_000_000,
                         },
-                    ],
+                    ]),
                 },
             ),
             register(
@@ -1109,7 +1109,7 @@ async fn test_errors() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: vec![
+            price_schedule: convert_schedule(vec![
                 Price {
                     length: 2,
                     price: 10_000_000,
@@ -1118,7 +1118,7 @@ async fn test_errors() {
                     length: 1,
                     price: 10_000_000,
                 },
-            ],
+            ]),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1228,7 +1228,7 @@ async fn test_errors() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: vec![
+            price_schedule: convert_schedule(vec![
                 Price {
                     length: 2,
                     price: 10_000_000,
@@ -1237,7 +1237,7 @@ async fn test_errors() {
                     length: 1,
                     price: 10_000_000,
                 },
-            ],
+            ]),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1299,7 +1299,7 @@ async fn test_errors() {
 #[tokio::test]
 async fn test_errors_nft() {
     // Create program and test environment
-    use common::utils::{random_string, sign_send_instructions};
+    use common::utils::{convert_schedule, random_string, sign_send_instructions};
 
     // Alice owns a .sol and creates the registry
     let alice = Keypair::new();
@@ -1483,7 +1483,7 @@ async fn test_errors_nft() {
             authority: alice.pubkey(),
             allow_revoke: true,
             max_nft_mint: 4,
-            price_schedule: vec![
+            price_schedule: convert_schedule(vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -1504,7 +1504,7 @@ async fn test_errors_nft() {
                     length: 5,
                     price: 10_000_000_001,
                 },
-            ],
+            ]),
             nft_gated_collection: Some(common::metadata::COLLECTION_KEY),
         },
     );

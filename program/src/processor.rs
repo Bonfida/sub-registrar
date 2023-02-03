@@ -10,16 +10,14 @@ use {
 use crate::instruction::ProgramInstruction;
 
 pub mod admin_register;
+pub mod admin_revoke;
 pub mod close_registrar;
 pub mod create_registrar;
 pub mod delete_subrecord;
 pub mod edit_registrar;
+pub mod nft_owner_revoke;
 pub mod register;
-mod revoke;
 pub mod unregister;
-
-pub use revoke::admin_revoke;
-pub use revoke::nft_owner_revoke;
 
 pub struct Processor {}
 
@@ -80,15 +78,15 @@ impl Processor {
             }
             ProgramInstruction::AdminRevoke => {
                 msg!("[+] Instruction: Admin revoke instruction");
-                let params = revoke::admin_revoke::Params::try_from_slice(instruction_data)
+                let params = admin_revoke::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
-                revoke::admin_revoke::process(program_id, accounts, params)?;
+                admin_revoke::process(program_id, accounts, params)?;
             }
             ProgramInstruction::NftOwnerRevoke => {
                 msg!("[+] Instruction: NFT owner revoke instruction");
-                let params = revoke::nft_owner_revoke::Params::try_from_slice(instruction_data)
+                let params = nft_owner_revoke::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
-                revoke::nft_owner_revoke::process(program_id, accounts, params)?;
+                nft_owner_revoke::process(program_id, accounts, params)?;
             }
         }
 

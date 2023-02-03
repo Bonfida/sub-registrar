@@ -3,7 +3,7 @@
 use crate::{
     cpi::Cpi,
     error::SubRegisterError,
-    state::{registry::Registrar, schedule::Schedule, ROOT_DOMAIN_ACCOUNT},
+    state::{registry::Registrar, schedule::schedule_from_params, ROOT_DOMAIN_ACCOUNT},
 };
 
 use {
@@ -31,7 +31,7 @@ pub struct Params {
     pub mint: Pubkey,
     pub fee_account: Pubkey,
     pub authority: Pubkey,
-    pub price_schedule: Schedule,
+    pub price_schedule: Vec<Vec<u64>>,
     pub nft_gated_collection: Option<Pubkey>,
     pub max_nft_mint: u8,
     pub allow_revoke: bool,
@@ -93,7 +93,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
     }
 }
 
-pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], mut params: Params) -> ProgramResult {
+pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let (registrar_key, nonce) = Registrar::find_key(
         accounts.domain_name_account.key,
@@ -109,7 +109,8 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], mut params: Params
         msg!("Only .sol are accepted");
         return Err(SubRegisterError::WrongNameAccount.into());
     }
-    params.price_schedule.sort_by_key(|x| x.length);
+    let mut price_schedule = schedule_from_params(params.price_schedule);
+    price_schedule.sort_by_key(|x| x.length);
 
     // Create Registry account
     let seeds: &[&[u8]] = &[
@@ -123,7 +124,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], mut params: Params
         &params.fee_account,
         &params.mint,
         accounts.domain_name_account.key,
-        params.price_schedule,
+        price_schedule,
         nonce,
         params.nft_gated_collection,
         params.max_nft_mint,

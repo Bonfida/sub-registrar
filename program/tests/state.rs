@@ -33,7 +33,7 @@ pub mod common;
 #[tokio::test]
 async fn test_state() {
     // Create program and test environment
-    use common::utils::{random_string, sign_send_instructions};
+    use common::utils::{convert_schedule, random_string, sign_send_instructions};
 
     // Alice owns a .sol and creates the registry
     let alice = Keypair::new();
@@ -218,7 +218,7 @@ async fn test_state() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: vec![
+            price_schedule: convert_schedule(vec![
                 Price {
                     length: 2,
                     price: 10_000_000,
@@ -227,7 +227,7 @@ async fn test_state() {
                     length: 1,
                     price: 10_000_000,
                 },
-            ],
+            ]),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -278,7 +278,7 @@ async fn test_state() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(vec![
+            new_price_schedule: Some(convert_schedule(vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -291,7 +291,7 @@ async fn test_state() {
                     length: 3,
                     price: 5_000_000,
                 },
-            ]),
+            ])),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -333,7 +333,7 @@ async fn test_state() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(vec![
+            new_price_schedule: Some(convert_schedule(vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -342,7 +342,7 @@ async fn test_state() {
                     length: 2,
                     price: 8_000_000,
                 },
-            ]),
+            ])),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -642,7 +642,7 @@ async fn test_state() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(vec![
+            new_price_schedule: Some(convert_schedule(vec![
                 // Not in the right order in purpose
                 Price {
                     length: 2,
@@ -664,7 +664,7 @@ async fn test_state() {
                     length: 5,
                     price: 5_000_000,
                 },
-            ]),
+            ])),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1099,7 +1099,7 @@ async fn test_state() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: vec![
+            price_schedule: convert_schedule(vec![
                 Price {
                     length: 2,
                     price: 10_000_000,
@@ -1108,7 +1108,7 @@ async fn test_state() {
                     length: 1,
                     price: 10_000_000,
                 },
-            ],
+            ]),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1157,7 +1157,7 @@ async fn test_state() {
             new_authority: Some(alice.pubkey()),
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(vec![
+            new_price_schedule: Some(convert_schedule(vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -1178,7 +1178,7 @@ async fn test_state() {
                     length: 5,
                     price: 5_000_000,
                 },
-            ]),
+            ])),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
