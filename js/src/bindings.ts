@@ -271,19 +271,31 @@ export const adminRegister = async (
   return [ix];
 };
 
-export const nftOwnerRevoke = async () => {
+export const nftOwnerRevoke = async (
+  connection: Connection,
+  registrar: PublicKey,
+  subOwner: PublicKey,
+  nftOwner: PublicKey,
+  subDomainAccount: PublicKey
+) => {
+  const obj = await Registrar.retrieve(connection, registrar);
+  const [subRecord] = SubRecord.findKey(subDomainAccount, SUB_REGISTER_ID);
+  const subRecordObj = await SubRecord.retrieve(connection, subRecord);
+
+  // TODO
+
   const ix = new nftOwnerRevokeInstruction().getInstruction(
     SUB_REGISTER_ID,
     registrar,
-    pubkey,
+    subDomainAccount,
     subRecord,
     subOwner,
-    parent,
+    obj.domain,
     nftOwner,
     nftAccount,
     nftMetadata,
-    nftMintRecord,
-    nameClass,
+    subRecordObj.mintRecord,
+    PublicKey.default,
     NAME_PROGRAM_ID
   );
   return [ix];
