@@ -9,10 +9,9 @@ import { customLoader } from "../../utils/custom-loader";
 import { useState } from "react";
 
 const sections = [
-  { name: "Trade", href: "/trade" },
-  { name: "Stake", href: "/stake" },
-  { name: "Buy & Burn", href: "/buy-and-burn" },
-  { name: "Name Service", href: "https://naming.bonfida.org" },
+  { name: "Home", href: "/" },
+  // All created registrars
+  { name: "Registrars", href: "/registrars" },
 ];
 
 export const Topbar = () => {
@@ -120,7 +119,7 @@ export const Topbar = () => {
               </span>
             </div>
           </Link>
-          <div className="hidden items-center ml-10 space-x-10 font-medium text-white lg:flex font-azeret">
+          <div className="items-center hidden ml-10 space-x-10 font-medium text-white lg:flex font-azeret">
             {sections.map((e) => {
               return (
                 <Link key={e.name} href={e.href}>

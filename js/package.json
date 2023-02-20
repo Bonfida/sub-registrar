@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "@bonfida/spl-name-service": "^0.1.64",
-    "@solana/spl-token": "0.1.8",
+    "@solana/spl-token": "latest",
     "@solana/web3.js": "^1.30.2",
     "bn.js": "^5.2.0",
     "borsh": "^0.6.0",

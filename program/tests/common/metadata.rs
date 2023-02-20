@@ -35,6 +35,7 @@ pub fn get_metadata() -> Metadata {
         }),
         uses: None,
         collection_details: None,
+        programmable_config: None,
     }
 }
 

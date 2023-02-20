@@ -227,6 +227,7 @@ mod tests {
         use borsh::BorshSerialize;
         let collection = Pubkey::new_unique();
         let metadata = Metadata {
+            programmable_config: None,
             key: mpl_token_metadata::state::Key::MetadataV1,
             update_authority: Pubkey::new_unique(),
             mint: Pubkey::new_unique(),
@@ -267,6 +268,7 @@ mod tests {
 
         // Unverified collection
         let metadata = Metadata {
+            programmable_config: None,
             key: mpl_token_metadata::state::Key::MetadataV1,
             update_authority: Pubkey::new_unique(),
             mint: Pubkey::new_unique(),
@@ -307,6 +309,7 @@ mod tests {
 
         // Different collection
         let metadata = Metadata {
+            programmable_config: None,
             key: mpl_token_metadata::state::Key::MetadataV1,
             update_authority: Pubkey::new_unique(),
             mint: Pubkey::new_unique(),
@@ -347,6 +350,7 @@ mod tests {
 
         // No collection
         let metadata = Metadata {
+            programmable_config: None,
             key: mpl_token_metadata::state::Key::MetadataV1,
             update_authority: Pubkey::new_unique(),
             mint: Pubkey::new_unique(),
