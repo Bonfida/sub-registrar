@@ -34,6 +34,7 @@ import {
   Schedule,
   SubRecord,
 } from "./state";
+import { Metaplex } from "@metaplex-foundation/js";
 
 /**
  * Mainnet program ID
@@ -139,6 +140,7 @@ export const register = async (
   buyer: PublicKey,
   subDomain: string
 ) => {
+  const metaplex = new Metaplex(connection);
   const obj = await Registrar.retrieve(connection, registrar);
   const parent = await performReverseLookup(connection, obj.domain);
 
@@ -150,6 +152,7 @@ export const register = async (
   let nftMintRecord: PublicKey | undefined = undefined;
   if (obj.nftGatedCollection) {
     // TODO
+    let nfts = await metaplex.nfts().findAllByOwner({ owner: buyer });
   }
 
   const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
@@ -278,6 +281,7 @@ export const nftOwnerRevoke = async (
   nftOwner: PublicKey,
   subDomainAccount: PublicKey
 ) => {
+  const metaplex = new Metaplex(connection);
   const obj = await Registrar.retrieve(connection, registrar);
   const [subRecord] = SubRecord.findKey(subDomainAccount, SUB_REGISTER_ID);
   const subRecordObj = await SubRecord.retrieve(connection, subRecord);

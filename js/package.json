@@ -44,6 +44,7 @@
   },
   "dependencies": {
     "@bonfida/spl-name-service": "^0.1.64",
+    "@metaplex-foundation/js": "^0.18.1",
     "@solana/spl-token": "latest",
     "@solana/web3.js": "^1.30.2",
     "bn.js": "^5.2.0",
