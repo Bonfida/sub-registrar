@@ -12,7 +12,7 @@ use {
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum ProgramInstruction {
     /// Create registrar
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -23,7 +23,7 @@ pub enum ProgramInstruction {
     /// | 5     | ❌        | ❌      | The SPL name service program ID      |
     CreateRegistrar,
     /// Edit a registrar
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ❌        | ❌      | The system program account |
@@ -31,7 +31,7 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ❌      | The registry to edit       |
     EditRegistrar,
     /// Register a subdomain
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                                                                           |
     /// | ----------------------------------------------------------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account                                                            |
@@ -55,7 +55,7 @@ pub enum ProgramInstruction {
     /// | 18    | ✅        | ❌      | Optional NFT mint record to keep track of how many domains were created with this NFT |
     Register,
     /// Unregister a subdomain
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -67,7 +67,7 @@ pub enum ProgramInstruction {
     /// | 6     | ✅        | ❌      |                                      |
     Unregister,
     /// Close a registrar account
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                              |
     /// | -------------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account               |
@@ -79,14 +79,14 @@ pub enum ProgramInstruction {
     /// | 6     | ❌        | ❌      | The SPL name service program ID          |
     CloseRegistrar,
     /// Allow the authority of a `Registrar` to register a subdomain without token transfer
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
     /// | 1     | ❌        | ❌      | The SPL token program account        |
     /// | 2     | ❌        | ❌      | The SPL name service program account |
     /// | 3     | ❌        | ❌      | The rent sysvar account              |
-    /// | 4     | ❌        | ❌      | The name auctioning program account  |
+    /// | 4     | ❌        | ❌      | The sns registrar program account    |
     /// | 5     | ❌        | ❌      | The .sol root domain                 |
     /// | 6     | ❌        | ❌      | The reverse lookup class accoutn     |
     /// | 7     | ✅        | ❌      | The registrar account                |
@@ -97,16 +97,17 @@ pub enum ProgramInstruction {
     /// | 12    | ✅        | ✅      | The fee payer account                |
     AdminRegister,
     /// Delete a subrecord account account
-    ///
+    /// 
     /// | Index | Writable | Signer | Description             |
     /// | --------------------------------------------------- |
-    /// | 0     | ✅        | ❌      | The sub domain account  |
-    /// | 1     | ✅        | ❌      | The sub record account  |
-    /// | 2     | ✅        | ❌      | The lamports target     |
-    /// | 3     | ✅        | ❌      | The mint record account |
+    /// | 0     | ✅        | ❌      |                         |
+    /// | 1     | ✅        | ❌      | The sub domain account  |
+    /// | 2     | ✅        | ❌      | The sub record account  |
+    /// | 3     | ✅        | ❌      | The lamports target     |
+    /// | 4     | ✅        | ❌      | The mint record account |
     DeleteSubrecord,
     /// Allow the authority of a `Registrar` to revoke a subdomain
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                     |
     /// | ----------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The registrar account           |
@@ -117,9 +118,10 @@ pub enum ProgramInstruction {
     /// | 5     | ✅        | ✅      | The fee payer account           |
     /// | 6     | ❌        | ❌      | Name class                      |
     /// | 7     | ❌        | ❌      | The name service program ID     |
+    /// | 8     | ✅        | ❌      |                                 |
     AdminRevoke,
     /// In the case of ...
-    ///
+    /// 
     /// | Index | Writable | Signer | Description                     |
     /// | ----------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The registrar account           |
@@ -130,7 +132,7 @@ pub enum ProgramInstruction {
     /// | 5     | ✅        | ✅      | The fee payer account           |
     /// | 6     | ❌        | ❌      | The NFT account                 |
     /// | 7     | ❌        | ❌      |                                 |
-    /// | 8     | ❌        | ❌      |                                 |
+    /// | 8     | ✅        | ❌      |                                 |
     /// | 9     | ❌        | ❌      | Name class                      |
     /// | 10    | ❌        | ❌      | The name service program ID     |
     NftOwnerRevoke,

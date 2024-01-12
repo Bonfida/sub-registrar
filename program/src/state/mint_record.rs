@@ -11,15 +11,17 @@ use {
 pub struct MintRecord {
     pub tag: Tag,
     pub count: u8,
+    pub mint: Pubkey,
 }
 
 impl MintRecord {
     pub const SEEDS: &'static [u8; 15] = b"nft_mint_record";
 
-    pub fn new() -> Self {
+    pub fn new(mint: &Pubkey) -> Self {
         Self {
             tag: Tag::MintRecord,
             count: 0,
+            mint: *mint,
         }
     }
 
@@ -46,6 +48,6 @@ impl MintRecord {
 
 impl Default for MintRecord {
     fn default() -> Self {
-        Self::new()
+        Self::new(&Pubkey::default())
     }
 }

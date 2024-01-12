@@ -70,7 +70,7 @@ pub fn revoke_unchecked<'a>(
     **target_lamports += **sub_record_lamports;
     **sub_record_lamports = 0;
 
-    // Decrement mint record ount
+    // Decrement mint record count
     if let Some(mut mint_record) = mint_record {
         mint_record.count = mint_record
             .count

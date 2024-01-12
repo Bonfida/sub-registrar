@@ -249,7 +249,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Create subrecord account
-    let sub_record = SubRecord::new(*accounts.registrar.key);
+    let sub_record = SubRecord::new(*accounts.registrar.key, *accounts.sub_domain_account.key);
     let seeds: &[&[u8]] = &[
         SubRecord::SEEDS,
         &accounts.sub_domain_account.key.to_bytes(),

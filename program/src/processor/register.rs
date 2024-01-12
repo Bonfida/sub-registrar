@@ -219,7 +219,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         mint_record_key = Some(pda);
         check_account_key(nft_mint_record, &pda)?;
         let mut mint_record = if nft_mint_record.data_is_empty() {
-            let mint_record = MintRecord::new();
+            let mint_record = MintRecord::new(&mint);
             let seeds: &[&[u8]] = &[
                 MintRecord::SEEDS,
                 &accounts.registrar.key.to_bytes(),
@@ -385,7 +385,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Create subrecord account
-    let mut sub_record = SubRecord::new(*accounts.registrar.key);
+    let mut sub_record = SubRecord::new(*accounts.registrar.key, *accounts.sub_domain_account.key);
     sub_record.mint_record = mint_record_key;
     let seeds: &[&[u8]] = &[
         SubRecord::SEEDS,

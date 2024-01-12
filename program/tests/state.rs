@@ -809,7 +809,7 @@ async fn test_state() {
         .unwrap()
         .unwrap();
     let subrecord: SubRecord = SubRecord::deserialize(&mut &acc.data[..]).unwrap();
-    assert_eq!(subrecord, SubRecord::new(registry_key));
+    assert_eq!(subrecord, SubRecord::new(registry_key, sub_domain_key));
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -877,7 +877,7 @@ async fn test_state() {
         .unwrap()
         .unwrap();
     let subrecord: SubRecord = SubRecord::deserialize(&mut &acc.data[..]).unwrap();
-    assert_eq!(subrecord, SubRecord::new(registry_key));
+    assert_eq!(subrecord, SubRecord::new(registry_key, sub_domain_key));
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -1010,7 +1010,7 @@ async fn test_state() {
         .unwrap()
         .unwrap();
     let subrecord: SubRecord = SubRecord::deserialize(&mut &acc.data[..]).unwrap();
-    assert_eq!(subrecord, SubRecord::new(registry_key));
+    assert_eq!(subrecord, SubRecord::new(registry_key, sub_domain_key));
 
     // Unregister admin created sub
     sign_send_instructions(
@@ -1299,6 +1299,7 @@ async fn test_state() {
     let mut expected_mint_record = MintRecord {
         tag: Tag::MintRecord,
         count: 1,
+        mint: common::metadata::NFT_MINT,
     };
     assert_eq!(mint_record, expected_mint_record);
     let sub_record = prg_test_ctx
@@ -1310,6 +1311,7 @@ async fn test_state() {
         tag: Tag::SubRecord,
         registrar: registry_key,
         mint_record: Some(mint_record_key),
+        sub_key: sub_domain_key,
     };
     assert_eq!(sub_record, expected_sub_record);
 

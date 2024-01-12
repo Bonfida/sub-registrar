@@ -10,16 +10,18 @@ use {
 pub struct SubRecord {
     pub tag: Tag,
     pub registrar: Pubkey,
+    pub sub_key: Pubkey,
     pub mint_record: Option<Pubkey>,
 }
 
 impl SubRecord {
     pub const SEEDS: &'static [u8; 9] = b"subrecord";
 
-    pub fn new(registrar: Pubkey) -> Self {
+    pub fn new(registrar: Pubkey, sub_key: Pubkey) -> Self {
         Self {
             tag: Tag::SubRecord,
             registrar,
+            sub_key,
             mint_record: None,
         }
     }
@@ -44,6 +46,6 @@ impl SubRecord {
 
 impl Default for SubRecord {
     fn default() -> Self {
-        Self::new(Pubkey::default())
+        Self::new(Pubkey::default(), Pubkey::default())
     }
 }
