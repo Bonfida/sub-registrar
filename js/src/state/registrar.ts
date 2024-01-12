@@ -1,4 +1,4 @@
-import { deserialize, Schema } from "borsh";
+import { deserialize } from "borsh";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Tag } from "./tag";
@@ -6,18 +6,11 @@ import { Tag } from "./tag";
 export class Schedule {
   length: BN;
   price: BN;
-  static schema: Schema = new Map([
-    [
-      Schedule,
-      {
-        kind: "struct",
-        fields: [
-          ["length", "u64"],
-          ["price", "u64"],
-        ],
-      },
-    ],
-  ]);
+
+  static schema = {
+    struct: { length: "u64", price: "u64" },
+  };
+
   constructor(obj: { price: BN; length: BN }) {
     this.length = obj.length;
     this.price = obj.price;
@@ -38,37 +31,21 @@ export class Registrar {
   allowRevoke: boolean;
   priceScedule: Schedule;
 
-  static schema: Schema = new Map<any, any>([
-    [
-      Registrar,
-      {
-        kind: "struct",
-        fields: [
-          ["tag", "u64"],
-          ["nonce", "u8"],
-          ["authority", [32]],
-          ["feeAccount", [32]],
-          ["mint", [32]],
-          ["domain", [32]],
-          ["totalSubCreated", "u64"],
-          ["nftGatedCollection", { kind: "option", type: [32] }],
-          ["maxNftMint", "u8"],
-          ["allowRevoke", "u8"],
-          ["priceScedule", Schedule],
-        ],
-      },
-    ],
-    [
-      Schedule,
-      {
-        kind: "struct",
-        fields: [
-          ["length", "u64"],
-          ["price", "u64"],
-        ],
-      },
-    ],
-  ]);
+  static schema = {
+    struct: {
+      tag: "u8",
+      nonce: "u8",
+      authority: { array: { type: "u8", len: 32 } },
+      feeAccount: { array: { type: "u8", len: 32 } },
+      mint: { array: { type: "u8", len: 32 } },
+      domain: { array: { type: "u8", len: 32 } },
+      totalSubCreated: "u64",
+      nftGatedCollection: { option: { array: { type: "u8", len: 32 } } },
+      maxNftMint: "u8",
+      allowRevoke: "u8",
+      priceScedule: { array: { type: Schedule.schema } },
+    },
+  };
 
   constructor(obj: {
     tag: Tag;
@@ -99,7 +76,7 @@ export class Registrar {
   }
 
   static deserialize(data: Buffer): Registrar {
-    return deserialize(this.schema, Registrar, data);
+    return new Registrar(deserialize(this.schema, data) as any);
   }
 
   static async retrieve(connection: Connection, key: PublicKey) {

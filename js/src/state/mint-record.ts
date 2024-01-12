@@ -1,4 +1,4 @@
-import { deserialize, Schema } from "borsh";
+import { deserialize } from "borsh";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Tag } from "./tag";
@@ -7,27 +7,24 @@ export class MintRecord {
   static SEED = "nft_mint_record";
   tag: Tag;
   count: number;
+  mint: PublicKey;
 
-  static schema: Schema = new Map([
-    [
-      MintRecord,
-      {
-        kind: "struct",
-        fields: [
-          ["tag", "u64"],
-          ["nonce", "u8"],
-        ],
-      },
-    ],
-  ]);
+  static schema = {
+    struct: {
+      tag: "u8",
+      count: "u8",
+      mint: { array: { type: "u8", len: 32 } },
+    },
+  };
 
-  constructor(obj: { tag: BN; nonce: number; owner: Uint8Array }) {
+  constructor(obj: { tag: BN; count: number; mint: Uint8Array }) {
     this.tag = obj.tag.toNumber() as Tag;
-    this.count = obj.nonce;
+    this.count = obj.count;
+    this.mint = new PublicKey(obj.mint);
   }
 
   static deserialize(data: Buffer): MintRecord {
-    return deserialize(this.schema, MintRecord, data);
+    return new MintRecord(deserialize(this.schema, data) as any);
   }
 
   static async retrieve(connection: Connection, key: PublicKey) {

@@ -1,4 +1,4 @@
-import { deserialize, Schema } from "borsh";
+import { deserialize } from "borsh";
 import { Connection, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Tag } from "./tag";
@@ -7,30 +7,34 @@ export class SubRecord {
   static SEED = "subrecord";
   tag: Tag;
   registrar: PublicKey;
-  mintRecord: PublicKey;
+  subKey: PublicKey;
+  mintRecord: PublicKey | null;
 
-  static schema: Schema = new Map([
-    [
-      SubRecord,
-      {
-        kind: "struct",
-        fields: [
-          ["tag", "u64"],
-          ["registrar", [32]],
-          ["mintRecord", { kind: "option", type: [32] }],
-        ],
-      },
-    ],
-  ]);
+  static schema = {
+    struct: {
+      tag: "u8",
+      registrar: { array: { type: "u8", len: 32 } },
+      subKey: { array: { type: "u8", len: 32 } },
+      mintRecord: { option: { array: { type: "u8", len: 32 } } },
+    },
+  };
 
-  constructor(obj: { tag: BN; registrar: Uint8Array; mintRecord: Uint8Array }) {
+  constructor(obj: {
+    tag: BN;
+    registrar: Uint8Array;
+    subKey: Uint8Array;
+    mintRecord: Uint8Array | null;
+  }) {
     this.tag = obj.tag.toNumber() as Tag;
     this.registrar = new PublicKey(obj.registrar);
-    this.mintRecord = new PublicKey(obj.mintRecord);
+    this.subKey = new PublicKey(obj.subKey);
+    this.mintRecord = obj.mintRecord
+      ? new PublicKey(obj.mintRecord)
+      : undefined;
   }
 
   static deserialize(data: Buffer): SubRecord {
-    return deserialize(this.schema, SubRecord, data);
+    return new SubRecord(deserialize(this.schema, data) as any);
   }
 
   static async retrieve(connection: Connection, key: PublicKey) {

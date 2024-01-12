@@ -1,12 +1,15 @@
 import {
   getDomainKey,
+  getDomainKeySync,
   getReverseKey,
+  getReverseKeySync,
   NAME_PROGRAM_ID,
   performReverseLookup,
   REVERSE_LOOKUP_CLASS,
   ROOT_DOMAIN_ACCOUNT,
 } from "@bonfida/spl-name-service";
 import {
+  AccountLayout,
   TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
@@ -34,7 +37,8 @@ import {
   Schedule,
   SubRecord,
 } from "./state";
-import { Metaplex } from "@metaplex-foundation/js";
+
+import { getMetadataKeyFromMint } from "./utils";
 
 /**
  * Mainnet program ID
@@ -72,7 +76,7 @@ export const createRegistrar = async (
       ? nftGatedCollection.toBuffer()
       : null,
     maxNftMint: maxNftMint || 0,
-    allowRevoke: allowRevoke ? 1 : 0,
+    allowRevoke,
     priceSchedule: formatSchedule(schedule),
   }).getInstruction(
     SUB_REGISTER_ID,
@@ -138,21 +142,25 @@ export const register = async (
   connection: Connection,
   registrar: PublicKey,
   buyer: PublicKey,
+  nftAccount: PublicKey,
   subDomain: string
 ) => {
-  const metaplex = new Metaplex(connection);
   const obj = await Registrar.retrieve(connection, registrar);
   const parent = await performReverseLookup(connection, obj.domain);
 
-  const { pubkey } = await getDomainKey(subDomain + "." + parent);
-  const reverseKey = await getReverseKey(subDomain + "." + parent, true);
+  const { pubkey } = getDomainKeySync(subDomain + "." + parent);
+  const reverseKey = getReverseKeySync(subDomain + "." + parent, true);
 
-  let nftAccount: PublicKey | undefined = undefined;
   let nftMetadata: PublicKey | undefined = undefined;
   let nftMintRecord: PublicKey | undefined = undefined;
   if (obj.nftGatedCollection) {
-    // TODO
-    let nfts = await metaplex.nfts().findAllByOwner({ owner: buyer });
+    const nftInfo = await connection.getAccountInfo(nftAccount);
+    if (!nftInfo) {
+      throw new Error("NFT account info not found");
+    }
+    const des = AccountLayout.decode(nftInfo.data);
+    nftMetadata = getMetadataKeyFromMint(des.mint);
+    nftMintRecord = MintRecord.findKey(registrar, des.mint, SUB_REGISTER_ID)[0];
   }
 
   const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
@@ -281,12 +289,14 @@ export const nftOwnerRevoke = async (
   nftOwner: PublicKey,
   subDomainAccount: PublicKey
 ) => {
-  const metaplex = new Metaplex(connection);
   const obj = await Registrar.retrieve(connection, registrar);
   const [subRecord] = SubRecord.findKey(subDomainAccount, SUB_REGISTER_ID);
   const subRecordObj = await SubRecord.retrieve(connection, subRecord);
 
-  // TODO
+  const mintRecord = await MintRecord.retrieve(
+    connection,
+    subRecordObj.mintRecord
+  );
 
   const ix = new nftOwnerRevokeInstruction().getInstruction(
     SUB_REGISTER_ID,
@@ -296,8 +306,8 @@ export const nftOwnerRevoke = async (
     subOwner,
     obj.domain,
     nftOwner,
-    nftAccount,
-    nftMetadata,
+    getAssociatedTokenAddressSync(mintRecord.mint, nftOwner, true),
+    getMetadataKeyFromMint(mintRecord.mint),
     subRecordObj.mintRecord,
     PublicKey.default,
     NAME_PROGRAM_ID
