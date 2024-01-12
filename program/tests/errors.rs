@@ -8,12 +8,11 @@ use sub_register::{
     },
     state::{
         mint_record::MintRecord, registry::Registrar, schedule::Price, subrecord::SubRecord,
-        FEE_ACC_OWNER, NAME_AUCTIONING,
+        FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
     },
 };
 use {
     borsh::BorshSerialize,
-    name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
     solana_program::{system_program, sysvar},
     solana_program_test::{processor, ProgramTest},
     solana_sdk::{
@@ -49,7 +48,7 @@ async fn test_errors() {
     );
 
     program_test.add_program("spl_name_service", spl_name_service::ID, None);
-    program_test.add_program("name_auctioning", NAME_AUCTIONING, None);
+    program_test.add_program("sns_registrar", sns_registrar::ID, None);
     program_test.add_program("mpl_token_metadata", mpl_token_metadata::ID, None);
 
     // Add mock NFT & collection
@@ -110,13 +109,13 @@ async fn test_errors() {
             ..Account::default()
         },
     );
-    let (_, nonce) = Pubkey::find_program_address(&[&NAME_AUCTIONING.to_bytes()], &NAME_AUCTIONING);
+
     program_test.add_account(
-        name_auctioning::processor::CENTRAL_STATE,
+        sns_registrar::central_state::KEY,
         Account {
             lamports: 1_000_000,
-            owner: NAME_AUCTIONING,
-            data: vec![nonce],
+            owner: sns_registrar::ID,
+            data: vec![sns_registrar::central_state::NONCE],
             ..Account::default()
         },
     );
@@ -316,13 +315,13 @@ async fn test_errors() {
     // Bob registers a subdomain of length 2
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
             registrar: &registry_key,
@@ -485,13 +484,13 @@ async fn test_errors() {
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata_fake_mint,
             registrar: &registry_key,
@@ -515,13 +514,13 @@ async fn test_errors() {
     // Test: Register with not enough funds
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
             registrar: &registry_key,
@@ -593,13 +592,13 @@ async fn test_errors() {
             ),
             register(
                 register::Accounts {
-                    name_auctioning_program: &NAME_AUCTIONING,
+                    sns_registrar_program: &sns_registrar::ID,
                     system_program: &system_program::ID,
                     spl_token_program: &spl_token::ID,
                     spl_name_service: &spl_name_service::ID,
                     rent_sysvar: &sysvar::rent::id(),
-                    root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-                    reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                    root_domain: &ROOT_DOMAIN_ACCOUNT,
+                    reverse_lookup_class: &sns_registrar::central_state::KEY,
                     fee_account: alice_fee_account,
                     fee_source: &bob_ata,
                     registrar: &registry_key,
@@ -632,13 +631,13 @@ async fn test_errors() {
         &mut prg_test_ctx,
         vec![register(
             register::Accounts {
-                name_auctioning_program: &NAME_AUCTIONING,
+                sns_registrar_program: &sns_registrar::ID,
                 system_program: &system_program::ID,
                 spl_token_program: &spl_token::ID,
                 spl_name_service: &spl_name_service::ID,
                 rent_sysvar: &sysvar::rent::id(),
-                root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-                reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                root_domain: &ROOT_DOMAIN_ACCOUNT,
+                reverse_lookup_class: &sns_registrar::central_state::KEY,
                 fee_account: alice_fee_account,
                 fee_source: &bob_ata,
                 registrar: &registry_key,
@@ -688,13 +687,13 @@ async fn test_errors() {
         &mut prg_test_ctx,
         vec![admin_register(
             admin_register::Accounts {
-                name_auctioning_program: &NAME_AUCTIONING,
+                sns_registrar_program: &sns_registrar::ID,
                 system_program: &system_program::ID,
                 spl_token_program: &spl_token::ID,
                 spl_name_service: &spl_name_service::ID,
                 rent_sysvar: &sysvar::rent::id(),
-                root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-                reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                root_domain: &ROOT_DOMAIN_ACCOUNT,
+                reverse_lookup_class: &sns_registrar::central_state::KEY,
                 registrar: &registry_key,
                 parent_domain_account: &name_key,
                 sub_domain_account: &sub_domain_key,
@@ -720,13 +719,13 @@ async fn test_errors() {
         &mut prg_test_ctx,
         vec![register(
             register::Accounts {
-                name_auctioning_program: &NAME_AUCTIONING,
+                sns_registrar_program: &sns_registrar::ID,
                 system_program: &system_program::ID,
                 spl_token_program: &spl_token::ID,
                 spl_name_service: &spl_name_service::ID,
                 rent_sysvar: &sysvar::rent::id(),
-                root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-                reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                root_domain: &ROOT_DOMAIN_ACCOUNT,
+                reverse_lookup_class: &sns_registrar::central_state::KEY,
                 fee_account: alice_fee_account,
                 fee_source: &bob_ata,
                 registrar: &registry_key,
@@ -816,13 +815,13 @@ async fn test_errors() {
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
             registrar: &registry_key,
@@ -856,13 +855,13 @@ async fn test_errors() {
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
             registrar: &registry_key,
@@ -948,13 +947,13 @@ async fn test_errors() {
             ),
             register(
                 register::Accounts {
-                    name_auctioning_program: &NAME_AUCTIONING,
+                    sns_registrar_program: &sns_registrar::ID,
                     system_program: &system_program::ID,
                     spl_token_program: &spl_token::ID,
                     spl_name_service: &spl_name_service::ID,
                     rent_sysvar: &sysvar::rent::id(),
-                    root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-                    reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                    root_domain: &ROOT_DOMAIN_ACCOUNT,
+                    reverse_lookup_class: &sns_registrar::central_state::KEY,
                     fee_account: alice_fee_account,
                     fee_source: &bob_ata,
                     registrar: &registry_key,
@@ -974,13 +973,13 @@ async fn test_errors() {
             ),
             register(
                 register::Accounts {
-                    name_auctioning_program: &NAME_AUCTIONING,
+                    sns_registrar_program: &sns_registrar::ID,
                     system_program: &system_program::ID,
                     spl_token_program: &spl_token::ID,
                     spl_name_service: &spl_name_service::ID,
                     rent_sysvar: &sysvar::rent::id(),
-                    root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-                    reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                    root_domain: &ROOT_DOMAIN_ACCOUNT,
+                    reverse_lookup_class: &sns_registrar::central_state::KEY,
                     fee_account: alice_fee_account,
                     fee_source: &bob_ata,
                     registrar: &registry_key,
@@ -1133,13 +1132,13 @@ async fn test_errors() {
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
             registrar: &registry_key,
@@ -1251,13 +1250,13 @@ async fn test_errors() {
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
             registrar: &registry_key,
@@ -1318,7 +1317,7 @@ async fn test_errors_nft() {
     );
 
     program_test.add_program("spl_name_service", spl_name_service::ID, None);
-    program_test.add_program("name_auctioning", NAME_AUCTIONING, None);
+    program_test.add_program("sns_registrar", sns_registrar::ID, None);
     program_test.add_program("mpl_token_metadata", mpl_token_metadata::ID, None);
 
     // Add mock NFT & collection
@@ -1363,13 +1362,13 @@ async fn test_errors_nft() {
             ..Account::default()
         },
     );
-    let (_, nonce) = Pubkey::find_program_address(&[&NAME_AUCTIONING.to_bytes()], &NAME_AUCTIONING);
+
     program_test.add_account(
-        name_auctioning::processor::CENTRAL_STATE,
+        sns_registrar::central_state::KEY,
         Account {
             lamports: 1_000_000,
-            owner: NAME_AUCTIONING,
-            data: vec![nonce],
+            owner: sns_registrar::ID,
+            data: vec![sns_registrar::central_state::NONCE],
             ..Account::default()
         },
     );
@@ -1529,13 +1528,13 @@ async fn test_errors_nft() {
         // Bob registers a subdomain
         let ix = register(
             register::Accounts {
-                name_auctioning_program: &NAME_AUCTIONING,
+                sns_registrar_program: &sns_registrar::ID,
                 system_program: &system_program::ID,
                 spl_token_program: &spl_token::ID,
                 spl_name_service: &spl_name_service::ID,
                 rent_sysvar: &sysvar::rent::id(),
-                root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-                reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+                root_domain: &ROOT_DOMAIN_ACCOUNT,
+                reverse_lookup_class: &sns_registrar::central_state::KEY,
                 fee_account: alice_fee_account,
                 fee_source: &bob_ata,
                 registrar: &registry_key,
@@ -1571,13 +1570,13 @@ async fn test_errors_nft() {
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
             registrar: &registry_key,
@@ -1666,13 +1665,13 @@ async fn test_errors_nft() {
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
             registrar: &registry_key,
@@ -1727,13 +1726,13 @@ async fn test_errors_nft() {
     // Bob registers a subdomain
     let ix = register(
         register::Accounts {
-            name_auctioning_program: &NAME_AUCTIONING,
+            sns_registrar_program: &sns_registrar::ID,
             system_program: &system_program::ID,
             spl_token_program: &spl_token::ID,
             spl_name_service: &spl_name_service::ID,
             rent_sysvar: &sysvar::rent::id(),
-            root_domain: &name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            reverse_lookup_class: &name_auctioning::processor::CENTRAL_STATE,
+            root_domain: &ROOT_DOMAIN_ACCOUNT,
+            reverse_lookup_class: &sns_registrar::central_state::KEY,
             fee_account: alice_fee_account,
             fee_source: &bob_ata,
             registrar: &registry_key,

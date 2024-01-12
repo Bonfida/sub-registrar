@@ -1,10 +1,11 @@
+use std::convert::TryFrom;
+
+use mpl_token_metadata::accounts::Metadata;
 use solana_program::{program_error::ProgramError, program_pack::Pack};
 
 use crate::{error::SubRegisterError, state::schedule::Schedule};
 
 use {
-    borsh::BorshDeserialize,
-    mpl_token_metadata::state::Metadata,
     solana_program::{account_info::AccountInfo, hash::hashv, pubkey::Pubkey},
     spl_name_service::state::{get_seeds_and_key, HASH_PREFIX},
     unicode_segmentation::UnicodeSegmentation,
@@ -43,7 +44,7 @@ pub fn get_subdomain_reverse(ui_subdomain: String, parent: &Pubkey) -> Pubkey {
     let (name_account_key, _) = get_seeds_and_key(
         &spl_name_service::ID,
         hashed_name,
-        Some(&name_auctioning::processor::CENTRAL_STATE),
+        Some(&sns_registrar::central_state::KEY),
         Some(parent),
     );
     name_account_key
@@ -75,7 +76,8 @@ pub fn check_metadata(
     expected_collection: &Pubkey,
 ) -> Result<(), ProgramError> {
     // Deserialize metadata
-    let metadata = Metadata::deserialize(&mut (&nft_metadata_account.data.borrow() as &[u8]))?;
+
+    let metadata = Metadata::try_from(nft_metadata_account)?;
 
     if let Some(collection) = metadata.collection {
         // Check collection is verified
@@ -95,6 +97,9 @@ pub fn check_metadata(
 
 #[cfg(test)]
 mod tests {
+    use borsh::BorshSerialize;
+    use mpl_token_metadata::types::{Collection, Key};
+
     use super::*;
     use std::{cell::RefCell, rc::Rc};
     #[test]
@@ -224,25 +229,22 @@ mod tests {
 
     #[test]
     fn test_check_metadata() {
-        use borsh::BorshSerialize;
         let collection = Pubkey::new_unique();
         let metadata = Metadata {
             programmable_config: None,
-            key: mpl_token_metadata::state::Key::MetadataV1,
+            key: Key::MetadataV1,
             update_authority: Pubkey::new_unique(),
             mint: Pubkey::new_unique(),
-            data: mpl_token_metadata::state::Data {
-                name: "".to_string(),
-                symbol: "".to_string(),
-                uri: "".to_string(),
-                seller_fee_basis_points: 0,
-                creators: None,
-            },
+            name: "".to_string(),
+            symbol: "".to_string(),
+            uri: "".to_string(),
+            seller_fee_basis_points: 0,
+            creators: None,
             primary_sale_happened: true,
             is_mutable: true,
             edition_nonce: Some(255),
             token_standard: None,
-            collection: Some(mpl_token_metadata::state::Collection {
+            collection: Some(Collection {
                 verified: true,
                 key: collection,
             }),
@@ -269,21 +271,19 @@ mod tests {
         // Unverified collection
         let metadata = Metadata {
             programmable_config: None,
-            key: mpl_token_metadata::state::Key::MetadataV1,
+            key: Key::MetadataV1,
             update_authority: Pubkey::new_unique(),
             mint: Pubkey::new_unique(),
-            data: mpl_token_metadata::state::Data {
-                name: "".to_string(),
-                symbol: "".to_string(),
-                uri: "".to_string(),
-                seller_fee_basis_points: 0,
-                creators: None,
-            },
+            name: "".to_string(),
+            symbol: "".to_string(),
+            uri: "".to_string(),
+            seller_fee_basis_points: 0,
+            creators: None,
             primary_sale_happened: true,
             is_mutable: true,
             edition_nonce: Some(255),
             token_standard: None,
-            collection: Some(mpl_token_metadata::state::Collection {
+            collection: Some(Collection {
                 verified: false,
                 key: collection,
             }),
@@ -310,21 +310,19 @@ mod tests {
         // Different collection
         let metadata = Metadata {
             programmable_config: None,
-            key: mpl_token_metadata::state::Key::MetadataV1,
+            key: Key::MetadataV1,
             update_authority: Pubkey::new_unique(),
             mint: Pubkey::new_unique(),
-            data: mpl_token_metadata::state::Data {
-                name: "".to_string(),
-                symbol: "".to_string(),
-                uri: "".to_string(),
-                seller_fee_basis_points: 0,
-                creators: None,
-            },
+            name: "".to_string(),
+            symbol: "".to_string(),
+            uri: "".to_string(),
+            seller_fee_basis_points: 0,
+            creators: None,
             primary_sale_happened: true,
             is_mutable: true,
             edition_nonce: Some(255),
             token_standard: None,
-            collection: Some(mpl_token_metadata::state::Collection {
+            collection: Some(Collection {
                 verified: true,
                 key: Pubkey::new_unique(),
             }),
@@ -351,16 +349,14 @@ mod tests {
         // No collection
         let metadata = Metadata {
             programmable_config: None,
-            key: mpl_token_metadata::state::Key::MetadataV1,
+            key: Key::MetadataV1,
             update_authority: Pubkey::new_unique(),
             mint: Pubkey::new_unique(),
-            data: mpl_token_metadata::state::Data {
-                name: "".to_string(),
-                symbol: "".to_string(),
-                uri: "".to_string(),
-                seller_fee_basis_points: 0,
-                creators: None,
-            },
+            name: "".to_string(),
+            symbol: "".to_string(),
+            uri: "".to_string(),
+            seller_fee_basis_points: 0,
+            creators: None,
             primary_sale_happened: true,
             is_mutable: true,
             edition_nonce: Some(255),

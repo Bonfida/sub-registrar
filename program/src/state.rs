@@ -9,14 +9,12 @@ pub mod registry;
 pub mod schedule;
 pub mod subrecord;
 
-pub const ROOT_DOMAIN_ACCOUNT: Pubkey = pubkey!("58PwtjSDuFHuUkYjH9BYnnQKHfwo9reZhC2zMJv9JPkx");
-pub const NAME_AUCTIONING: Pubkey = pubkey!("jCebN34bUfdeUYJT13J1yG16XWQpt5PDx6Mse9GUqhR");
+pub const ROOT_DOMAIN_ACCOUNT: Pubkey = sns_registrar::constants::ROOT_DOMAIN_ACCOUNT;
 
 // 5% fee
 pub const FEE_PCT: u64 = 5;
 // Fee account
-// TODO: change to real address
-pub const FEE_ACC_OWNER: Pubkey = pubkey!("G9tP6ZonwNj2qTdPpCrTsrCQgDovppxjCddfidNwFq5n");
+pub const FEE_ACC_OWNER: Pubkey = pubkey!("5D2zKog251d6KPCyFyLMt3KroWwXXPWSgTPyhV22K2gR");
 
 #[derive(BorshSerialize, BorshDeserialize, BorshSize, PartialEq, Debug, Eq)]
 #[allow(missing_docs)]

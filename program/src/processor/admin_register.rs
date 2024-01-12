@@ -1,10 +1,10 @@
 //! Allow the authority of a `Registrar` to register a subdomain without token transfer
-
 use crate::{
     cpi::Cpi,
     error::SubRegisterError,
-    state::{registry::Registrar, subrecord::SubRecord, Tag, NAME_AUCTIONING, ROOT_DOMAIN_ACCOUNT},
+    state::{registry::Registrar, subrecord::SubRecord, Tag, ROOT_DOMAIN_ACCOUNT},
 };
+use sns_registrar::processor::create_reverse;
 
 use {
     bonfida_utils::{
@@ -12,7 +12,7 @@ use {
         BorshSize, InstructionsAccount,
     },
     borsh::{BorshDeserialize, BorshSerialize},
-    name_auctioning::{instructions::create_reverse, processor::CENTRAL_STATE},
+    sns_registrar::instruction_auto::create_reverse,
     solana_program::{
         account_info::{next_account_info, AccountInfo},
         entrypoint::ProgramResult,
@@ -49,8 +49,8 @@ pub struct Accounts<'a, T> {
     /// The rent sysvar account
     pub rent_sysvar: &'a T,
 
-    /// The name auctioning program account
-    pub name_auctioning_program: &'a T,
+    /// The sns registrar program account
+    pub sns_registrar_program: &'a T,
 
     /// The .sol root domain
     pub root_domain: &'a T,
@@ -94,7 +94,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             spl_token_program: next_account_info(accounts_iter)?,
             spl_name_service: next_account_info(accounts_iter)?,
             rent_sysvar: next_account_info(accounts_iter)?,
-            name_auctioning_program: next_account_info(accounts_iter)?,
+            sns_registrar_program: next_account_info(accounts_iter)?,
             root_domain: next_account_info(accounts_iter)?,
             reverse_lookup_class: next_account_info(accounts_iter)?,
             registrar: next_account_info(accounts_iter)?,
@@ -110,9 +110,12 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
         check_account_key(accounts.spl_token_program, &spl_token::ID)?;
         check_account_key(accounts.spl_name_service, &spl_name_service::ID)?;
         check_account_key(accounts.rent_sysvar, &sysvar::rent::id())?;
-        check_account_key(accounts.name_auctioning_program, &NAME_AUCTIONING)?;
+        check_account_key(accounts.sns_registrar_program, &sns_registrar::ID)?;
         check_account_key(accounts.root_domain, &ROOT_DOMAIN_ACCOUNT)?;
-        check_account_key(accounts.reverse_lookup_class, &CENTRAL_STATE)?;
+        check_account_key(
+            accounts.reverse_lookup_class,
+            &sns_registrar::central_state::KEY,
+        )?;
 
         // Check owners
         check_account_owner(accounts.registrar, program_id)?;
@@ -145,6 +148,10 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     if params.domain.trim().to_lowercase() != params.domain {
+        return Err(SubRegisterError::InvalidSubdomain.into());
+    }
+
+    if params.domain.contains('.') {
         return Err(SubRegisterError::InvalidSubdomain.into());
     }
 
@@ -206,19 +213,27 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     // Sub reverse should be passed in the accounts and check if does not already exist
     if accounts.sub_reverse_account.data_is_empty() {
         let ix = create_reverse(
-            NAME_AUCTIONING,
-            name_auctioning::processor::ROOT_DOMAIN_ACCOUNT,
-            *accounts.sub_reverse_account.key,
-            name_auctioning::processor::CENTRAL_STATE,
-            *accounts.authority.key,
-            params.domain,
-            Some(registrar.domain_account),
-            Some(*accounts.registrar.key),
+            sns_registrar::ID,
+            create_reverse::Accounts {
+                naming_service_program: &spl_name_service::ID,
+                root_domain: &ROOT_DOMAIN_ACCOUNT,
+                reverse_lookup: accounts.sub_reverse_account.key,
+                system_program: &system_program::ID,
+                central_state: &sns_registrar::central_state::KEY,
+                fee_payer: accounts.authority.key,
+                rent_sysvar: accounts.rent_sysvar.key,
+                parent_name: Some(accounts.parent_domain_account.key),
+                parent_name_owner: Some(accounts.registrar.key),
+            },
+            create_reverse::Params {
+                name: params.domain,
+            },
         );
         invoke_signed(
             &ix,
             &[
-                accounts.name_auctioning_program.clone(),
+                accounts.sns_registrar_program.clone(),
+                accounts.spl_name_service.clone(),
                 accounts.rent_sysvar.clone(),
                 accounts.spl_name_service.clone(),
                 accounts.root_domain.clone(),

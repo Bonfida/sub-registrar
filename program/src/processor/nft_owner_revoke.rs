@@ -1,5 +1,7 @@
 //! In the case of ...
 
+use mpl_token_metadata::accounts::Metadata;
+
 use crate::{
     error::SubRegisterError,
     revoke_unchecked,
@@ -13,7 +15,6 @@ use {
         BorshSize, InstructionsAccount,
     },
     borsh::{BorshDeserialize, BorshSerialize},
-    mpl_token_metadata::pda::find_metadata_account,
     solana_program::{
         account_info::{next_account_info, AccountInfo},
         entrypoint::ProgramResult,
@@ -117,7 +118,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
     let mint = check_nft_holding_and_get_mint(accounts.nft_account, accounts.nft_owner.key)?;
     check_metadata(accounts.nft_metadata, &collection)?;
 
-    let (pda, _) = find_metadata_account(&mint);
+    let (pda, _) = Metadata::find_pda(&mint);
     check_account_key(accounts.nft_metadata, &pda)?;
     let (subrecord_key, _) = SubRecord::find_key(accounts.sub_domain_account.key, program_id);
 
