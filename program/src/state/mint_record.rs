@@ -6,6 +6,7 @@ use {
     solana_program::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey},
 };
 
+// MintRecords are used to keep track of how many domains were minted via a specific NFT ownership.
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Eq, BorshSize)]
 pub struct MintRecord {
     pub tag: Tag,

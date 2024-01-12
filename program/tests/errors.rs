@@ -310,7 +310,7 @@ async fn test_errors() {
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // To unregister later
-    let sub_domain_key_to_unreg = sub_domain_key.clone();
+    let sub_domain_key_to_unreg = sub_domain_key;
 
     // Bob registers a subdomain of length 2
     let ix = register(
@@ -329,7 +329,7 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
             sub_record: &subrecord_key,
@@ -498,7 +498,7 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
             sub_record: &subrecord_key,
@@ -528,7 +528,7 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
             sub_record: &subrecord_key,
@@ -560,7 +560,7 @@ async fn test_errors() {
             system_program: &system_program::ID,
             spl_name_service: &spl_name_service::ID,
             registrar: &registry_key,
-            sub_domain_account: &&sub_domain_key_to_unreg,
+            sub_domain_account: &sub_domain_key_to_unreg,
             domain_owner: &bob.pubkey(),
             sub_record: &subrecord_key,
             mint_record: None,
@@ -606,7 +606,7 @@ async fn test_errors() {
                     sub_domain_account: &sub_domain_key,
                     sub_reverse_account: &sub_reverse_key,
                     fee_payer: &bob.pubkey(),
-                    bonfida_fee_account: &bonfida_fee_account,
+                    bonfida_fee_account,
                     nft_account: None,
                     nft_metadata_account: None,
                     sub_record: &subrecord_key,
@@ -645,7 +645,7 @@ async fn test_errors() {
                 sub_domain_account: &sub_domain_key,
                 sub_reverse_account: &sub_reverse_key,
                 fee_payer: &bob.pubkey(),
-                bonfida_fee_account: &bonfida_fee_account,
+                bonfida_fee_account,
                 nft_account: None,
                 nft_metadata_account: None,
                 sub_record: &subrecord_key,
@@ -733,7 +733,7 @@ async fn test_errors() {
                 sub_domain_account: &sub_domain_key,
                 sub_reverse_account: &sub_reverse_key,
                 fee_payer: &bob.pubkey(),
-                bonfida_fee_account: &alice_fee_account,
+                bonfida_fee_account: alice_fee_account,
                 nft_account: None,
                 nft_metadata_account: None,
                 sub_record: &subrecord_key,
@@ -829,7 +829,7 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: Some(&bob_nft_account_zero_amount),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
             sub_record: &subrecord_key,
@@ -869,7 +869,7 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: Some(&bob_nft_account),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
             sub_record: &subrecord_key,
@@ -895,7 +895,7 @@ async fn test_errors() {
     let sub_reverse_key_2 =
         sub_register::utils::get_subdomain_reverse(sub_domain_2.clone(), &name_key);
     let (subrecord_key_2, _) = SubRecord::find_key(&sub_domain_key_2, &sub_register::ID);
-    let fee_payer = prg_test_ctx.payer.pubkey().clone();
+    let fee_payer = prg_test_ctx.payer.pubkey();
     sign_send_instructions(
         &mut prg_test_ctx,
         vec![close_registrar(
@@ -961,7 +961,7 @@ async fn test_errors() {
                     sub_domain_account: &sub_domain_key_1,
                     sub_reverse_account: &sub_reverse_key_1,
                     fee_payer: &bob.pubkey(),
-                    bonfida_fee_account: &bonfida_fee_account,
+                    bonfida_fee_account,
                     nft_account: None,
                     nft_metadata_account: None,
                     sub_record: &subrecord_key_1,
@@ -987,7 +987,7 @@ async fn test_errors() {
                     sub_domain_account: &sub_domain_key_2,
                     sub_reverse_account: &sub_reverse_key_2,
                     fee_payer: &bob.pubkey(),
-                    bonfida_fee_account: &bonfida_fee_account,
+                    bonfida_fee_account,
                     nft_account: None,
                     nft_metadata_account: None,
                     sub_record: &subrecord_key_2,
@@ -1146,10 +1146,10 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
-            sub_record: &&subrecord_key,
+            sub_record: &subrecord_key,
             nft_mint_record: None,
         },
         register::Params {
@@ -1264,10 +1264,10 @@ async fn test_errors() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
-            sub_record: &&subrecord_key,
+            sub_record: &subrecord_key,
             nft_mint_record: None,
         },
         register::Params {
@@ -1542,7 +1542,7 @@ async fn test_errors_nft() {
                 sub_domain_account: &sub_domain_key,
                 sub_reverse_account: &sub_reverse_key,
                 fee_payer: &bob.pubkey(),
-                bonfida_fee_account: &bonfida_fee_account,
+                bonfida_fee_account,
                 nft_account: Some(&bob_nft_account),
                 nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
                 sub_record: &subrecord_key,
@@ -1584,7 +1584,7 @@ async fn test_errors_nft() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: Some(&bob_nft_account),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
             sub_record: &subrecord_key,
@@ -1600,7 +1600,7 @@ async fn test_errors_nft() {
     // Alice tries to revoke domain from Bob through `nft_owner_revoke`
     let ix = nft_owner_revoke(
         nft_owner_revoke::Accounts {
-            registrar: &&registry_key,
+            registrar: &registry_key,
             sub_domain_account: &sub_to_revoke,
             sub_record: &SubRecord::find_key(&sub_to_revoke, &sub_register::ID).0,
             sub_owner: &bob.pubkey(),
@@ -1633,7 +1633,7 @@ async fn test_errors_nft() {
     // Bob tries a successful revoke via NFT
     let ix = nft_owner_revoke(
         nft_owner_revoke::Accounts {
-            registrar: &&registry_key,
+            registrar: &registry_key,
             sub_domain_account: &sub_to_revoke,
             sub_record: &SubRecord::find_key(&sub_to_revoke, &sub_register::ID).0,
             sub_owner: &bob.pubkey(),
@@ -1679,7 +1679,7 @@ async fn test_errors_nft() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: Some(&bob_nft_account),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
             sub_record: &subrecord_key,
@@ -1740,7 +1740,7 @@ async fn test_errors_nft() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: Some(&bob_nft_account),
             nft_metadata_account: Some(&common::metadata::NFT_METADATA_KEY),
             sub_record: &subrecord_key,

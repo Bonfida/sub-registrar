@@ -566,7 +566,7 @@ async fn test_state() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
             sub_record: &subrecord_key,
@@ -723,7 +723,7 @@ async fn test_state() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
             sub_record: &subrecord_key,
@@ -780,7 +780,7 @@ async fn test_state() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
             sub_record: &subrecord_key,
@@ -848,7 +848,7 @@ async fn test_state() {
             sub_domain_account: &sub_domain_key,
             sub_reverse_account: &sub_reverse_key,
             fee_payer: &bob.pubkey(),
-            bonfida_fee_account: &bonfida_fee_account,
+            bonfida_fee_account,
             nft_account: None,
             nft_metadata_account: None,
             sub_record: &subrecord_key,
@@ -1252,7 +1252,7 @@ async fn test_state() {
     // First, create sub
     let sub_domain = random_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_to_revoke = sub_domain_key.clone();
+    let sub_to_revoke = sub_domain_key;
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record_key, _) = MintRecord::find_key(
@@ -1417,7 +1417,7 @@ async fn test_state() {
         .unwrap();
     let ix = nft_owner_revoke(
         nft_owner_revoke::Accounts {
-            registrar: &&registry_key,
+            registrar: &registry_key,
             sub_domain_account: &sub_to_revoke,
             sub_record: &SubRecord::find_key(&sub_to_revoke, &sub_register::ID).0,
             sub_owner: &bob.pubkey(),
