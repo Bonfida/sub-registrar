@@ -1,6 +1,5 @@
 import { deserialize } from "borsh";
 import { Connection, PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
 import { Tag } from "./tag";
 
 export class SubRecord {
@@ -8,7 +7,7 @@ export class SubRecord {
   tag: Tag;
   registrar: PublicKey;
   subKey: PublicKey;
-  mintRecord: PublicKey | null;
+  mintRecord: PublicKey | undefined;
 
   static schema = {
     struct: {
@@ -20,12 +19,12 @@ export class SubRecord {
   };
 
   constructor(obj: {
-    tag: BN;
+    tag: number;
     registrar: Uint8Array;
     subKey: Uint8Array;
     mintRecord: Uint8Array | null;
   }) {
-    this.tag = obj.tag.toNumber() as Tag;
+    this.tag = obj.tag as Tag;
     this.registrar = new PublicKey(obj.registrar);
     this.subKey = new PublicKey(obj.subKey);
     this.mintRecord = obj.mintRecord

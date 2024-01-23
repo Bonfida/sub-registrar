@@ -1,10 +1,8 @@
 import {
-  getDomainKey,
   getDomainKeySync,
-  getReverseKey,
   getReverseKeySync,
   NAME_PROGRAM_ID,
-  performReverseLookup,
+  reverseLookup,
   REVERSE_LOOKUP_CLASS,
   ROOT_DOMAIN_ACCOUNT,
 } from "@bonfida/spl-name-service";
@@ -66,7 +64,7 @@ export const createRegistrar = async (
   maxNftMint: number | null,
   allowRevoke: boolean
 ) => {
-  const { pubkey } = await getDomainKey(domain);
+  const { pubkey } = getDomainKeySync(domain);
   const [registrar] = Registrar.findKey(pubkey, authority, SUB_REGISTER_ID);
   const ix = new createRegistrarInstruction({
     mint: mint.toBuffer(),
@@ -146,7 +144,7 @@ export const register = async (
   subDomain: string
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
-  const parent = await performReverseLookup(connection, obj.domain);
+  const parent = await reverseLookup(connection, obj.domain);
 
   const { pubkey } = getDomainKeySync(subDomain + "." + parent);
   const reverseKey = getReverseKeySync(subDomain + "." + parent, true);
@@ -227,8 +225,8 @@ export const unregister = async (
   owner: PublicKey
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
-  const parent = await performReverseLookup(connection, obj.domain);
-  const { pubkey } = await getDomainKey(subDomain + "." + parent);
+  const parent = await reverseLookup(connection, obj.domain);
+  const { pubkey } = getDomainKeySync(subDomain + "." + parent);
   const [subRecord] = SubRecord.findKey(obj.domain, SUB_REGISTER_ID);
 
   let mintRecord: PublicKey | undefined = undefined;
@@ -257,8 +255,8 @@ export const adminRegister = async (
   authority: PublicKey
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
-  const { pubkey } = await getDomainKey(subDomain + "." + parent);
-  const reverse = await getReverseKey(subDomain + "." + parent, true);
+  const { pubkey } = getDomainKeySync(subDomain + "." + parent);
+  const reverse = getReverseKeySync(subDomain + "." + parent, true);
   const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
 
   const ix = new adminRegisterInstruction({
@@ -293,6 +291,10 @@ export const nftOwnerRevoke = async (
   const [subRecord] = SubRecord.findKey(subDomainAccount, SUB_REGISTER_ID);
   const subRecordObj = await SubRecord.retrieve(connection, subRecord);
 
+  if (!subRecordObj.mintRecord) {
+    throw new Error("Mint record not found");
+  }
+
   const mintRecord = await MintRecord.retrieve(
     connection,
     subRecordObj.mintRecord
@@ -323,8 +325,8 @@ export const adminRevoke = async (
   authority: PublicKey
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
-  const parent = await performReverseLookup(connection, obj.domain);
-  const { pubkey } = await getDomainKey(subDomain + "." + parent);
+  const parent = await reverseLookup(connection, obj.domain);
+  const { pubkey } = getDomainKeySync(subDomain + "." + parent);
   const [subRecord] = SubRecord.findKey(obj.domain, SUB_REGISTER_ID);
 
   let mintRecord: PublicKey | undefined = undefined;
