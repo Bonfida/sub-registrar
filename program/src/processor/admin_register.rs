@@ -173,7 +173,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     check_account_key(accounts.sub_domain_account, &name_account_key)?;
 
     // Create sub
-    let space: u32 = 1_000;
+    let space: u32 = 0;
     let lamports = Rent::get()?.minimum_balance(space as usize + NameRecordHeader::LEN);
     let ix = spl_name_service::instruction::create(
         spl_name_service::ID,
