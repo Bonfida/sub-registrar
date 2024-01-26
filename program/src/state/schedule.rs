@@ -25,8 +25,8 @@ pub fn schedule_from_params(params: Vec<Vec<u64>>) -> Schedule {
     let mut schedule = Schedule::new();
     for x in params {
         schedule.push(Price {
-            length: x[0],
-            price: x[1],
+            length: *x.first().unwrap(),
+            price: *x.last().unwrap(),
         });
     }
     schedule
