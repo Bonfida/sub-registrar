@@ -1,6 +1,5 @@
 import { deserialize } from "borsh";
 import { Connection, PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
 import { Tag } from "./tag";
 
 export class MintRecord {
@@ -17,8 +16,8 @@ export class MintRecord {
     },
   };
 
-  constructor(obj: { tag: BN; count: number; mint: Uint8Array }) {
-    this.tag = obj.tag.toNumber() as Tag;
+  constructor(obj: { tag: bigint; count: number; mint: Uint8Array }) {
+    this.tag = Number(obj.tag) as Tag;
     this.count = obj.count;
     this.mint = new PublicKey(obj.mint);
   }

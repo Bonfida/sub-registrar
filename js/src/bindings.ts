@@ -5,6 +5,7 @@ import {
   reverseLookup,
   REVERSE_LOOKUP_CLASS,
   ROOT_DOMAIN_ACCOUNT,
+  REGISTER_PROGRAM_ID,
 } from "@bonfida/spl-name-service";
 import {
   AccountLayout,
@@ -41,16 +42,18 @@ import { getMetadataKeyFromMint } from "./utils";
 /**
  * Mainnet program ID
  */
-export const SUB_REGISTER_ID = new PublicKey(""); //TODO
+export const SUB_REGISTER_ID = new PublicKey(
+  "4CACAiPpQUn6nZaAr47N2mzxPZE5aBqhZQatjoMSLTAh"
+);
 
-const NAME_AUCTIONING_ID = PublicKey.default;
-
-const FEE_OWNER = PublicKey.default;
+const FEE_OWNER = new PublicKey("5D2zKog251d6KPCyFyLMt3KroWwXXPWSgTPyhV22K2gR");
 
 /**
  * Devnet program ID (might not have the latest version deployed!)
  */
-export const SUB_REGISTER_ID_DEVNET = new PublicKey(""); //TODO
+export const SUB_REGISTER_ID_DEVNET = new PublicKey(
+  "4CACAiPpQUn6nZaAr47N2mzxPZE5aBqhZQatjoMSLTAh"
+);
 
 export const createRegistrar = async (
   domain: string,
@@ -172,7 +175,7 @@ export const register = async (
     TOKEN_PROGRAM_ID,
     NAME_PROGRAM_ID,
     SYSVAR_RENT_PUBKEY,
-    NAME_AUCTIONING_ID,
+    REGISTER_PROGRAM_ID,
     ROOT_DOMAIN_ACCOUNT,
     REVERSE_LOOKUP_CLASS,
     obj.feeAccount,
@@ -267,7 +270,7 @@ export const adminRegister = async (
     TOKEN_PROGRAM_ID,
     NAME_PROGRAM_ID,
     SYSVAR_RENT_PUBKEY,
-    NAME_AUCTIONING_ID,
+    REGISTER_PROGRAM_ID,
     ROOT_DOMAIN_ACCOUNT,
     REVERSE_LOOKUP_CLASS,
     registrar,

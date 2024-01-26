@@ -1,17 +1,17 @@
 import { deserialize } from "borsh";
-import { Connection, PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
+import { Connection, MemcmpFilter, PublicKey } from "@solana/web3.js";
 import { Tag } from "./tag";
+import { SUB_REGISTER_ID } from "../";
 
 export class Schedule {
-  length: BN;
-  price: BN;
+  length: bigint;
+  price: bigint;
 
   static schema = {
     struct: { length: "u64", price: "u64" },
   };
 
-  constructor(obj: { price: BN; length: BN }) {
+  constructor(obj: { price: bigint; length: bigint }) {
     this.length = obj.length;
     this.price = obj.price;
   }
@@ -25,7 +25,7 @@ export class Registrar {
   feeAccount: PublicKey;
   mint: PublicKey;
   domain: PublicKey;
-  totalSubCreated: BN;
+  totalSubCreated: bigint;
   nftGatedCollection: PublicKey | null;
   maxNftMint: number;
   allowRevoke: boolean;
@@ -54,7 +54,7 @@ export class Registrar {
     feeAccount: Uint8Array;
     mint: Uint8Array;
     domain: Uint8Array;
-    totalSubCreated: BN;
+    totalSubCreated: bigint;
     nftGatedCollection: Uint8Array | null;
     maxNftMint: number;
     allowRevoke: boolean;
@@ -86,6 +86,39 @@ export class Registrar {
     }
     return this.deserialize(accountInfo.data);
   }
+
+  static async findForDomain(connection: Connection, domain: PublicKey) {
+    const filters: MemcmpFilter[] = [
+      { memcmp: { offset: 1 + 1 + 32 + 32 + 32, bytes: domain.toBase58() } },
+      { memcmp: { offset: 0, bytes: (Tag.Registrar + 1).toString() } },
+    ];
+    const accounts = await connection.getProgramAccounts(SUB_REGISTER_ID, {
+      filters,
+    });
+    return accounts.map((e) => {
+      return {
+        pubkey: e.pubkey,
+        registrar: Registrar.deserialize(e.account.data),
+      };
+    });
+  }
+
+  static async findForOwner(connection: Connection, owner: PublicKey) {
+    const filters: MemcmpFilter[] = [
+      { memcmp: { offset: 1 + 1, bytes: owner.toBase58() } },
+      { memcmp: { offset: 0, bytes: (Tag.Registrar + 1).toString() } },
+    ];
+    const accounts = await connection.getProgramAccounts(SUB_REGISTER_ID, {
+      filters,
+    });
+    return accounts.map((e) => {
+      return {
+        pubkey: e.pubkey,
+        registrar: Registrar.deserialize(e.account.data),
+      };
+    });
+  }
+
   static findKey(
     domain: PublicKey,
     authority: PublicKey,

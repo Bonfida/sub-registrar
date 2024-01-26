@@ -1,8 +1,3 @@
-import { deserialize, Schema } from "borsh";
-import { Connection, PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
-import { Tag } from "./tag";
-
 export interface Price {
   length: number;
   price: number;
@@ -10,9 +5,9 @@ export interface Price {
 
 export type Schedule = Price[];
 
-export const formatSchedule = (schedule: Schedule): BN[][] => {
-  const result: BN[][] = [];
-  schedule.forEach((s) => result.push([new BN(s.length), new BN(s.price)]));
+export const formatSchedule = (schedule: Schedule): bigint[][] => {
+  const result: bigint[][] = [];
+  schedule.forEach((s) => result.push([BigInt(s.length), BigInt(s.price)]));
   return result;
 };
 

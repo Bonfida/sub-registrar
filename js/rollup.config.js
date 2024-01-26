@@ -4,6 +4,7 @@ import terser from "@rollup/plugin-terser";
 import { nodeResolve } from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
 import babel from "@rollup/plugin-babel";
+import { visualizer } from "rollup-plugin-visualizer";
 
 export default {
   input: "src/index.ts",
@@ -16,7 +17,11 @@ export default {
   ],
   external: ["@solana/web3.js"],
   plugins: [
-    nodeResolve({ browser: true, preferBuiltins: false }),
+    nodeResolve({
+      browser: true,
+      preferBuiltins: false,
+      dedupe: ["buffer", "borsh", "@solana/buffer-layout", "@solana/spl-token"],
+    }),
     typescript(),
     commonjs(),
     babel({ babelHelpers: "bundled" }),
@@ -25,6 +30,7 @@ export default {
       preventAssignment: false,
     }),
     terser(),
+    visualizer(),
   ],
   onwarn: function (warning, handler) {
     if (warning.code === "THIS_IS_UNDEFINED") return;
