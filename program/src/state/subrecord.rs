@@ -6,6 +6,7 @@ use {
     solana_program::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey},
 };
 
+// SubRecord are used to keep track of subs minted via a specific registrar
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Eq, BorshSize)]
 pub struct SubRecord {
     pub tag: Tag,

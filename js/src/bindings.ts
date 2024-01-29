@@ -107,7 +107,7 @@ export const closeRegistrar = async (
     newDomainOwner,
     lamportsTarget,
     authority,
-    TOKEN_PROGRAM_ID
+    NAME_PROGRAM_ID
   );
   return [ix];
 };
@@ -167,9 +167,11 @@ export const register = async (
   const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
 
   const feeSource = getAssociatedTokenAddressSync(obj.mint, buyer, true);
-  const bonfidaFee = getAssociatedTokenAddressSync(obj.mint, FEE_OWNER);
+  const bonfidaFee = getAssociatedTokenAddressSync(obj.mint, FEE_OWNER, true);
 
-  const ix = new registerInstruction({ domain: subDomain }).getInstruction(
+  const ix = new registerInstruction({
+    domain: `\0`.concat(subDomain),
+  }).getInstruction(
     SUB_REGISTER_ID,
     SystemProgram.programId,
     TOKEN_PROGRAM_ID,
@@ -230,7 +232,7 @@ export const unregister = async (
   const obj = await Registrar.retrieve(connection, registrar);
   const parent = await reverseLookup(connection, obj.domain);
   const { pubkey } = getDomainKeySync(subDomain + "." + parent);
-  const [subRecord] = SubRecord.findKey(obj.domain, SUB_REGISTER_ID);
+  const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
 
   let mintRecord: PublicKey | undefined = undefined;
   if (obj.nftGatedCollection) {
@@ -258,12 +260,13 @@ export const adminRegister = async (
   authority: PublicKey
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
+  const parent = await reverseLookup(connection, obj.domain);
   const { pubkey } = getDomainKeySync(subDomain + "." + parent);
   const reverse = getReverseKeySync(subDomain + "." + parent, true);
   const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
 
   const ix = new adminRegisterInstruction({
-    domain: subDomain,
+    domain: `\0`.concat(subDomain),
   }).getInstruction(
     SUB_REGISTER_ID,
     SystemProgram.programId,

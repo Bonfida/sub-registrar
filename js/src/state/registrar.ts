@@ -29,7 +29,7 @@ export class Registrar {
   nftGatedCollection: PublicKey | null;
   maxNftMint: number;
   allowRevoke: boolean;
-  priceScedule: Schedule;
+  priceSchedule: Schedule[];
 
   static schema = {
     struct: {
@@ -43,7 +43,7 @@ export class Registrar {
       nftGatedCollection: { option: { array: { type: "u8", len: 32 } } },
       maxNftMint: "u8",
       allowRevoke: "u8",
-      priceScedule: { array: { type: Schedule.schema } },
+      priceSchedule: { array: { type: Schedule.schema } },
     },
   };
 
@@ -58,7 +58,7 @@ export class Registrar {
     nftGatedCollection: Uint8Array | null;
     maxNftMint: number;
     allowRevoke: boolean;
-    priceScedule: Schedule;
+    priceSchedule: Schedule[];
   }) {
     this.tag = obj.tag;
     this.nonce = obj.nonce;
@@ -72,7 +72,7 @@ export class Registrar {
       : null;
     this.maxNftMint = obj.maxNftMint;
     this.allowRevoke = obj.allowRevoke;
-    this.priceScedule = obj.priceScedule;
+    this.priceSchedule = obj.priceSchedule;
   }
 
   static deserialize(data: Buffer): Registrar {

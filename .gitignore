@@ -10,3 +10,4 @@ __pycache__
 *.woff
 *.ttf
 js/stats.html
+*.tgz
