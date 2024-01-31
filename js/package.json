@@ -1,6 +1,6 @@
 {
   "name": "@bonfida/sub-register",
-  "version": "0.0.1",
+  "version": "0.0.1-alpha.0",
   "license": "MIT",
   "repository": {
     "type": "git"
@@ -27,7 +27,7 @@
     "dev": "tsc && node dist/test.js",
     "prebuild": "rm -rf dist",
     "build": "rollup -c",
-    "prepublish": "rm -rf dist && tsc",
+    "prepublish": "rm -rf dist && rollup -c",
     "lint": "yarn pretty && eslint .",
     "lint:fix": "yarn pretty:fix && eslint . --fix",
     "pretty": "prettier --check 'src/*.[jt]s'",
@@ -65,7 +65,7 @@
     "@solana/web3.js": "^1.88.3"
   },
   "dependencies": {
-    "@bonfida/spl-name-service": "2.3.4",
+    "@bonfida/spl-name-service": "2.3.5",
     "@solana/spl-token": "0.3.11",
     "borsh": "2.0.0"
   }

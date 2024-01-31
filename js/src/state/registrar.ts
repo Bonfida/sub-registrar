@@ -130,3 +130,9 @@ export class Registrar {
     );
   }
 }
+
+export const formatSchedule = (schedule: Schedule[]): bigint[][] => {
+  const result: bigint[][] = [];
+  schedule.forEach((s) => result.push([BigInt(s.length), BigInt(s.price)]));
+  return result;
+};

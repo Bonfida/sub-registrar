@@ -61,7 +61,7 @@ export const createRegistrar = async (
   feePayer: PublicKey,
   mint: PublicKey,
   authority: PublicKey,
-  schedule: Schedule,
+  schedule: Schedule[],
   feeAccount: PublicKey,
   nftGatedCollection: PublicKey | null,
   maxNftMint: number | null,
@@ -118,7 +118,7 @@ export const editRegistrar = async (
   newAuthority: PublicKey | undefined,
   newMint: PublicKey | undefined,
   newFeeAccount: PublicKey | undefined,
-  newPriceSchedule: Schedule | undefined,
+  newPriceSchedule: Schedule[] | undefined,
   newMaxNftMint: number | undefined
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
