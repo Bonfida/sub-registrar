@@ -28,7 +28,7 @@ pub mod common;
 #[tokio::test]
 async fn test_functional() {
     // Create program and test environment
-    use common::utils::{convert_schedule, random_string, sign_send_instructions};
+    use common::utils::{random_string, sign_send_instructions};
 
     // Alice owns a .sol and creates the registry
     let alice = Keypair::new();
@@ -213,7 +213,7 @@ async fn test_functional() {
             max_nft_mint: 0,
             allow_revoke: false,
             authority: alice.pubkey(),
-            price_schedule: convert_schedule(vec![
+            price_schedule: (vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -241,7 +241,7 @@ async fn test_functional() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(convert_schedule(vec![
+            new_price_schedule: Some(vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -254,7 +254,7 @@ async fn test_functional() {
                     length: 3,
                     price: 5_000_000,
                 },
-            ])),
+            ]),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -262,6 +262,16 @@ async fn test_functional() {
         .unwrap();
 
     // Decrease vec size
+    let var_name = vec![
+        Price {
+            length: 1,
+            price: 10_000_000,
+        },
+        Price {
+            length: 2,
+            price: 10_000_000,
+        },
+    ];
     let ix = edit_registrar(
         edit_registrar::Accounts {
             system_program: &system_program::ID,
@@ -273,16 +283,7 @@ async fn test_functional() {
             new_max_nft_mint: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(convert_schedule(vec![
-                Price {
-                    length: 1,
-                    price: 10_000_000,
-                },
-                Price {
-                    length: 2,
-                    price: 10_000_000,
-                },
-            ])),
+            new_price_schedule: Some(var_name),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -290,8 +291,8 @@ async fn test_functional() {
         .unwrap();
 
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain
@@ -341,8 +342,8 @@ async fn test_functional() {
         .unwrap();
 
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let sub_domain_key_to_unreg_1 = sub_domain_key;
     let (subrecord_key_to_unreg_1, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     // Bob registers a subdomain
@@ -378,8 +379,8 @@ async fn test_functional() {
 
     // Admin register
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let sub_domain_key_to_unreg_2 = sub_domain_key;
     let (subrecord_key_to_unreg_2, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let ix = admin_register(
@@ -484,7 +485,7 @@ async fn test_functional() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: convert_schedule(vec![
+            price_schedule: (vec![
                 Price {
                     length: 2,
                     price: 10_000_000,
@@ -502,8 +503,8 @@ async fn test_functional() {
 
     // Test: register with NFT
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
@@ -560,8 +561,8 @@ async fn test_functional() {
         .await
         .unwrap();
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
@@ -626,8 +627,8 @@ async fn test_functional() {
 
     // Test: revoke sub
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
@@ -684,8 +685,8 @@ async fn test_functional() {
 
     // Test: revoke sub via NFT owner
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,

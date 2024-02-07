@@ -3,7 +3,7 @@
 use crate::{
     cpi::Cpi,
     error::SubRegisterError,
-    state::{registry::Registrar, schedule::schedule_from_params, ROOT_DOMAIN_ACCOUNT},
+    state::{registry::Registrar, schedule::Price, ROOT_DOMAIN_ACCOUNT},
 };
 
 use {
@@ -27,11 +27,10 @@ use {
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
 pub struct Params {
-    /// An example input parameter
     pub mint: Pubkey,
     pub fee_account: Pubkey,
     pub authority: Pubkey,
-    pub price_schedule: Vec<Vec<u64>>,
+    pub price_schedule: Vec<Price>,
     pub nft_gated_collection: Option<Pubkey>,
     pub max_nft_mint: u8,
     pub allow_revoke: bool,
@@ -109,8 +108,25 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         msg!("Only .sol are accepted");
         return Err(SubRegisterError::WrongNameAccount.into());
     }
-    let mut price_schedule = schedule_from_params(params.price_schedule);
-    price_schedule.sort_by_key(|x| x.length);
+    let sorted = params
+        .price_schedule
+        .iter()
+        .try_fold(
+            0,
+            |acc, p| {
+                if p.length < acc {
+                    None
+                } else {
+                    Some(p.length)
+                }
+            },
+        )
+        .is_some();
+    if !sorted {
+        msg!("The schedule price array should be sorted!");
+        return Err(ProgramError::InvalidArgument);
+    }
+    // price_schedule.sort_by_key(|x| x.length);
 
     // Create Registry account
     let seeds: &[&[u8]] = &[
@@ -124,7 +140,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         &params.fee_account,
         &params.mint,
         accounts.domain_name_account.key,
-        price_schedule,
+        params.price_schedule,
         nonce,
         params.nft_gated_collection,
         params.max_nft_mint,

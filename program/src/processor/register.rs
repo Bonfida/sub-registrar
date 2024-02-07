@@ -11,7 +11,7 @@ use crate::{
         FEE_PCT, ROOT_DOMAIN_ACCOUNT,
     },
     utils,
-    utils::{check_metadata, check_nft_holding_and_get_mint},
+    utils::{check_metadata, check_nft_holding_and_get_mint, get_subdomain_reverse},
 };
 
 use {
@@ -178,7 +178,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     check_account_key(accounts.sub_record, &subrecord_key)?;
     check_token_account_owner(accounts.bonfida_fee_account, &FEE_ACC_OWNER)?;
 
-    if !params.domain.starts_with('\0') {
+    if !params.domain.starts_with('\x00') {
         return Err(SubRegisterError::InvalidSubdomain.into());
     }
 
@@ -190,9 +190,9 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         return Err(SubRegisterError::InvalidSubdomain.into());
     }
 
-    // Handle NFT gated case firts
+    // Handle NFT gated case first
     let mut mint_record_key: Option<Pubkey> = None;
-    if let Some(collection) = registrar.nft_gated_collection {
+    if let Some(collection) = registrar.nft_gated_collection.as_ref() {
         let nft_account = accounts
             .nft_account
             .ok_or(SubRegisterError::MustProvideNft)?;
@@ -208,13 +208,13 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         check_account_owner(nft_metadata_account, &mpl_token_metadata::ID).unwrap();
 
         let mint = check_nft_holding_and_get_mint(nft_account, accounts.fee_payer.key)?;
-        check_metadata(nft_metadata_account, &collection)?;
+        check_metadata(nft_metadata_account, collection)?;
 
-        // Check metadata PDA deriation
+        // Check metadata PDA derivation
         let (pda, _) = Metadata::find_pda(&mint);
         check_account_key(nft_metadata_account, &pda)?;
 
-        // Check NFT record mint
+        // Check NFT mint record
         let (pda, nonce) = MintRecord::find_key(&mint, accounts.registrar.key, program_id);
         mint_record_key = Some(pda);
         check_account_key(nft_mint_record, &pda)?;
@@ -345,6 +345,13 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         ],
         &[seeds],
     )?;
+
+    let expected_sub_reverse_key =
+        get_subdomain_reverse(&params.domain, accounts.parent_domain_account.key);
+
+    if accounts.sub_reverse_account.key != &expected_sub_reverse_key {
+        return Err(ProgramError::InvalidArgument);
+    }
 
     // Sub reverse should be passed in the accounts and check if does not already exist
     if accounts.sub_reverse_account.data_is_empty() {
