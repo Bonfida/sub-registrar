@@ -14,17 +14,16 @@ use {
 pub fn get_domain_price(domain: String, schedule: &Schedule) -> u64 {
     let ui_domain = domain.strip_prefix('\0').unwrap();
     let len = ui_domain.graphemes(true).count() as u64;
-    for price in schedule {
-        if len == price.length {
-            return price.price;
-        }
-    }
-    // Less expensive price
-    let last = schedule.last().unwrap();
-    last.price
+    let price_index = schedule
+        .iter()
+        .enumerate()
+        .find_map(|(idx, p)| if p.length >= len { Some(idx) } else { None })
+        .unwrap_or(schedule.len())
+        .saturating_sub(1);
+    schedule[price_index].price
 }
 
-pub fn get_subdomain_key(ui_subdomain: String, parent: &Pubkey) -> Pubkey {
+pub fn get_subdomain_key(ui_subdomain: &str, parent: &Pubkey) -> Pubkey {
     let domain = format!("\0{ui_subdomain}");
     let hashed_name = hashv(&[(HASH_PREFIX.to_owned() + &domain).as_bytes()])
         .as_ref()
@@ -35,7 +34,7 @@ pub fn get_subdomain_key(ui_subdomain: String, parent: &Pubkey) -> Pubkey {
     name_account_key
 }
 
-pub fn get_subdomain_reverse(ui_subdomain: String, parent: &Pubkey) -> Pubkey {
+pub fn get_subdomain_reverse(ui_subdomain: &str, parent: &Pubkey) -> Pubkey {
     let subdomain_key = get_subdomain_key(ui_subdomain, parent);
     let hashed_name = hashv(&[(HASH_PREFIX.to_owned() + &subdomain_key.to_string()).as_bytes()])
         .as_ref()
@@ -128,21 +127,27 @@ mod tests {
             },
         ];
 
-        assert_eq!(get_domain_price("\01".to_string(), &schedule), 100);
-        assert_eq!(get_domain_price("\011".to_string(), &schedule), 90);
-        assert_eq!(get_domain_price("\0111".to_string(), &schedule), 80);
-        assert_eq!(get_domain_price("\01111".to_string(), &schedule), 70);
-        assert_eq!(get_domain_price("\011111".to_string(), &schedule), 60);
-        assert_eq!(get_domain_price("\0111111".to_string(), &schedule), 60);
-        assert_eq!(get_domain_price("\01111111111".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\x001".to_string(), &schedule), 100);
+        assert_eq!(get_domain_price("\x0011".to_string(), &schedule), 90);
+        assert_eq!(get_domain_price("\x00111".to_string(), &schedule), 80);
+        assert_eq!(get_domain_price("\x001111".to_string(), &schedule), 70);
+        assert_eq!(get_domain_price("\x0011111".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\x00111111".to_string(), &schedule), 60);
+        assert_eq!(
+            get_domain_price("\x001111111111".to_string(), &schedule),
+            60
+        );
 
-        assert_eq!(get_domain_price("\0😀".to_string(), &schedule), 100);
-        assert_eq!(get_domain_price("\01😀".to_string(), &schedule), 90);
-        assert_eq!(get_domain_price("\01😀1".to_string(), &schedule), 80);
-        assert_eq!(get_domain_price("\011😀1".to_string(), &schedule), 70);
-        assert_eq!(get_domain_price("\0111😀1".to_string(), &schedule), 60);
-        assert_eq!(get_domain_price("\011😀111".to_string(), &schedule), 60);
-        assert_eq!(get_domain_price("\011😀1111111".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\x00😀".to_string(), &schedule), 100);
+        assert_eq!(get_domain_price("\x001😀".to_string(), &schedule), 90);
+        assert_eq!(get_domain_price("\x001😀1".to_string(), &schedule), 80);
+        assert_eq!(get_domain_price("\x0011😀1".to_string(), &schedule), 70);
+        assert_eq!(get_domain_price("\x00111😀1".to_string(), &schedule), 60);
+        assert_eq!(get_domain_price("\x0011😀111".to_string(), &schedule), 60);
+        assert_eq!(
+            get_domain_price("\x0011😀1111111".to_string(), &schedule),
+            60
+        );
     }
 
     #[test]

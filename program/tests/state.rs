@@ -32,7 +32,7 @@ pub mod common;
 #[tokio::test]
 async fn test_state() {
     // Create program and test environment
-    use common::utils::{convert_schedule, random_string, sign_send_instructions};
+    use common::utils::{random_string, sign_send_instructions};
 
     // Alice owns a .sol and creates the registry
     let alice = Keypair::new();
@@ -217,7 +217,7 @@ async fn test_state() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: convert_schedule(vec![
+            price_schedule: (vec![
                 Price {
                     length: 2,
                     price: 10_000_000,
@@ -266,6 +266,20 @@ async fn test_state() {
     assert_eq!(registrar, expected_registrar);
 
     // Increase vec size
+    let var_name = vec![
+        Price {
+            length: 1,
+            price: 10_000_000,
+        },
+        Price {
+            length: 2,
+            price: 10_000_000,
+        },
+        Price {
+            length: 3,
+            price: 5_000_000,
+        },
+    ];
     let ix = edit_registrar(
         edit_registrar::Accounts {
             system_program: &system_program::ID,
@@ -277,20 +291,7 @@ async fn test_state() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(convert_schedule(vec![
-                Price {
-                    length: 1,
-                    price: 10_000_000,
-                },
-                Price {
-                    length: 2,
-                    price: 10_000_000,
-                },
-                Price {
-                    length: 3,
-                    price: 5_000_000,
-                },
-            ])),
+            new_price_schedule: Some(var_name),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -321,6 +322,16 @@ async fn test_state() {
     assert_eq!(registrar, expected_registrar);
 
     // Decrease vec size
+    let var_name = vec![
+        Price {
+            length: 1,
+            price: 10_000_000,
+        },
+        Price {
+            length: 2,
+            price: 8_000_000,
+        },
+    ];
     let ix = edit_registrar(
         edit_registrar::Accounts {
             system_program: &system_program::ID,
@@ -332,16 +343,7 @@ async fn test_state() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(convert_schedule(vec![
-                Price {
-                    length: 1,
-                    price: 10_000_000,
-                },
-                Price {
-                    length: 2,
-                    price: 8_000_000,
-                },
-            ])),
+            new_price_schedule: Some(var_name),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -545,8 +547,8 @@ async fn test_state() {
     assert_eq!(registrar, expected_registrar);
 
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain
@@ -630,6 +632,29 @@ async fn test_state() {
     assert_eq!(token_account.amount, 8_000_000 - total_fees);
 
     // Change price schedule + register + verify
+    let var_name = vec![
+        // Not in the right order in purpose
+        Price {
+            length: 2,
+            price: 8_000_000,
+        },
+        Price {
+            length: 4,
+            price: 6_000_000,
+        },
+        Price {
+            length: 1,
+            price: 10_000_000,
+        },
+        Price {
+            length: 3,
+            price: 7_000_000,
+        },
+        Price {
+            length: 5,
+            price: 5_000_000,
+        },
+    ];
     let ix = edit_registrar(
         edit_registrar::Accounts {
             system_program: &system_program::ID,
@@ -641,29 +666,7 @@ async fn test_state() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(convert_schedule(vec![
-                // Not in the right order in purpose
-                Price {
-                    length: 2,
-                    price: 8_000_000,
-                },
-                Price {
-                    length: 4,
-                    price: 6_000_000,
-                },
-                Price {
-                    length: 1,
-                    price: 10_000_000,
-                },
-                Price {
-                    length: 3,
-                    price: 7_000_000,
-                },
-                Price {
-                    length: 5,
-                    price: 5_000_000,
-                },
-            ])),
+            new_price_schedule: Some(var_name),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -702,8 +705,8 @@ async fn test_state() {
     assert_eq!(registrar, expected_registrar);
 
     let sub_domain = "1".to_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain of length 1
@@ -759,8 +762,8 @@ async fn test_state() {
     assert_eq!(token_account.amount, 8_000_000 + 10_000_000 - total_fees);
 
     let sub_domain = "1⛽️".to_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain of length 2
@@ -827,8 +830,8 @@ async fn test_state() {
     );
 
     let sub_domain = "1⛽️🚦".to_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain of length 3
@@ -904,10 +907,10 @@ async fn test_state() {
                     system_program: &system_program::ID,
                     spl_name_service: &spl_name_service::ID,
                     registrar: &registry_key,
-                    sub_domain_account: &get_subdomain_key("1".to_owned(), &name_key),
+                    sub_domain_account: &get_subdomain_key("1", &name_key),
                     domain_owner: &bob.pubkey(),
                     sub_record: &SubRecord::find_key(
-                        &get_subdomain_key("1".to_owned(), &name_key),
+                        &get_subdomain_key("1", &name_key),
                         &sub_register::ID,
                     )
                     .0,
@@ -920,10 +923,10 @@ async fn test_state() {
                     system_program: &system_program::ID,
                     spl_name_service: &spl_name_service::ID,
                     registrar: &registry_key,
-                    sub_domain_account: &get_subdomain_key("1⛽️".to_owned(), &name_key),
+                    sub_domain_account: &get_subdomain_key("1⛽️", &name_key),
                     domain_owner: &bob.pubkey(),
                     sub_record: &SubRecord::find_key(
-                        &get_subdomain_key("1⛽️".to_owned(), &name_key),
+                        &get_subdomain_key("1⛽️", &name_key),
                         &sub_register::ID,
                     )
                     .0,
@@ -936,10 +939,10 @@ async fn test_state() {
                     system_program: &system_program::ID,
                     spl_name_service: &spl_name_service::ID,
                     registrar: &registry_key,
-                    sub_domain_account: &get_subdomain_key("1⛽️🚦".to_owned(), &name_key),
+                    sub_domain_account: &get_subdomain_key("1⛽️🚦", &name_key),
                     domain_owner: &bob.pubkey(),
                     sub_record: &SubRecord::find_key(
-                        &get_subdomain_key("1⛽️🚦".to_owned(), &name_key),
+                        &get_subdomain_key("1⛽️🚦", &name_key),
                         &sub_register::ID,
                     )
                     .0,
@@ -963,8 +966,8 @@ async fn test_state() {
 
     // Admin register
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     sign_send_instructions(
         &mut prg_test_ctx,
@@ -1098,7 +1101,7 @@ async fn test_state() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: convert_schedule(vec![
+            price_schedule: (vec![
                 Price {
                     length: 2,
                     price: 10_000_000,
@@ -1145,6 +1148,28 @@ async fn test_state() {
     assert_eq!(expected_registrar, registrar);
 
     // Test: edit the registrar
+    let var_name = vec![
+        Price {
+            length: 1,
+            price: 10_000_000,
+        },
+        Price {
+            length: 2,
+            price: 8_000_000,
+        },
+        Price {
+            length: 3,
+            price: 7_000_000,
+        },
+        Price {
+            length: 4,
+            price: 6_000_000,
+        },
+        Price {
+            length: 5,
+            price: 5_000_000,
+        },
+    ];
     let ix = edit_registrar(
         edit_registrar::Accounts {
             system_program: &system_program::ID,
@@ -1156,28 +1181,7 @@ async fn test_state() {
             new_authority: Some(alice.pubkey()),
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(convert_schedule(vec![
-                Price {
-                    length: 1,
-                    price: 10_000_000,
-                },
-                Price {
-                    length: 2,
-                    price: 8_000_000,
-                },
-                Price {
-                    length: 3,
-                    price: 7_000_000,
-                },
-                Price {
-                    length: 4,
-                    price: 6_000_000,
-                },
-                Price {
-                    length: 5,
-                    price: 5_000_000,
-                },
-            ])),
+            new_price_schedule: Some(var_name),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1251,9 +1255,9 @@ async fn test_state() {
 
     // First, create sub
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_to_revoke = sub_domain_key;
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record_key, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
@@ -1317,8 +1321,8 @@ async fn test_state() {
 
     // Creates another sub
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record_key, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
@@ -1460,8 +1464,8 @@ async fn test_state() {
 
     // Creates another sub
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record_key, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
@@ -1548,8 +1552,8 @@ async fn test_state() {
 
     // Creates another sub
     let sub_domain = random_string();
-    let sub_domain_key = sub_register::utils::get_subdomain_key(sub_domain.clone(), &name_key);
-    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(sub_domain.clone(), &name_key);
+    let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
+    let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
     let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record_key, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,

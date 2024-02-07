@@ -1,9 +1,6 @@
 //! Edit a registrar
 
-use crate::{
-    error::SubRegisterError,
-    state::{registry::Registrar, schedule::schedule_from_params, Tag},
-};
+use crate::state::{registry::Registrar, schedule::Price, Tag};
 
 use {
     bonfida_utils::checks::check_account_owner,
@@ -32,7 +29,7 @@ pub struct Params {
     pub new_authority: Option<Pubkey>,
     pub new_mint: Option<Pubkey>,
     pub new_fee_account: Option<Pubkey>,
-    pub new_price_schedule: Option<Vec<Vec<u64>>>,
+    pub new_price_schedule: Option<Vec<Price>>,
     pub new_max_nft_mint: Option<u8>,
 }
 
@@ -94,8 +91,24 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     if let Some(new_price_schedule) = params.new_price_schedule {
-        let mut new_price_schedule = schedule_from_params(new_price_schedule);
-        new_price_schedule.sort_by_key(|x| x.length);
+        let sorted = new_price_schedule
+            .iter()
+            .try_fold(
+                0,
+                |acc, p| {
+                    if p.length < acc {
+                        None
+                    } else {
+                        Some(p.length)
+                    }
+                },
+            )
+            .is_some();
+        if !sorted {
+            msg!("The schedule price array should be sorted!");
+            return Err(ProgramError::InvalidArgument);
+        }
+        // new_price_schedule.sort_by_key(|x| x.length);
         registrar.price_schedule = new_price_schedule;
     }
 
@@ -108,42 +121,40 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         Ordering::Greater => {
             msg!("[+] Realloc registry account (increasing size)");
             let new_lamports = Rent::get()?.minimum_balance(registrar.borsh_len());
-            let diff_lamports = new_lamports
-                .checked_sub(accounts.registrar.lamports())
-                .ok_or(SubRegisterError::Overflow)?;
+            let diff_lamports = new_lamports.checked_sub(accounts.registrar.lamports());
 
             accounts.registrar.realloc(registrar.borsh_len(), false)?;
 
-            let ix = system_instruction::transfer(
-                accounts.authority.key,
-                accounts.registrar.key,
-                diff_lamports,
-            );
-            invoke(
-                &ix,
-                &[
-                    accounts.system_program.clone(),
-                    accounts.authority.clone(),
-                    accounts.registrar.clone(),
-                ],
-            )?;
+            if let Some(diff_lamports) = diff_lamports {
+                let ix = system_instruction::transfer(
+                    accounts.authority.key,
+                    accounts.registrar.key,
+                    diff_lamports,
+                );
+                invoke(
+                    &ix,
+                    &[
+                        accounts.system_program.clone(),
+                        accounts.authority.clone(),
+                        accounts.registrar.clone(),
+                    ],
+                )?;
+            }
         }
         Ordering::Less => {
             msg!("[+] Realloc registry account (decreasing size)");
             let new_lamports = Rent::get()?.minimum_balance(registrar.borsh_len());
-            let diff_lamports = accounts
-                .registrar
-                .lamports()
-                .checked_sub(new_lamports)
-                .ok_or(SubRegisterError::Overflow)?;
+            let diff_lamports = accounts.registrar.lamports().checked_sub(new_lamports);
 
             accounts.registrar.realloc(registrar.borsh_len(), true)?;
 
-            let mut registrar_lamports = accounts.registrar.lamports.borrow_mut();
-            let mut authority_lamports = accounts.authority.lamports.borrow_mut();
+            if let Some(diff_lamports) = diff_lamports {
+                let mut registrar_lamports = accounts.registrar.lamports.borrow_mut();
+                let mut authority_lamports = accounts.authority.lamports.borrow_mut();
 
-            **authority_lamports += diff_lamports;
-            **registrar_lamports -= diff_lamports;
+                **authority_lamports += diff_lamports;
+                **registrar_lamports -= diff_lamports;
+            }
         }
         Ordering::Equal => (),
     }
