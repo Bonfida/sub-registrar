@@ -1,7 +1,7 @@
 //! Delete a subrecord account account
 use crate::{
     error::SubRegisterError,
-    state::{mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag},
+    state::{mint_record::MintRecord, registry::Registrar, subdomain_record::SubDomainRecord, Tag},
 };
 
 use {
@@ -73,11 +73,11 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut sub_record = SubRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
+    let mut sub_record = SubDomainRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
     let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
     // Check PDA derivation
-    let (sub_record_key, _) = SubRecord::find_key(accounts.sub_domain.key, program_id);
+    let (sub_record_key, _) = SubDomainRecord::find_key(accounts.sub_domain.key, program_id);
     check_account_key(accounts.sub_record, &sub_record_key)?;
 
     if let Some(mint_record) = sub_record.mint_record {

@@ -1,5 +1,5 @@
 pub use crate::processor::{
-    admin_register, admin_revoke, close_registrar, create_registrar, delete_subrecord,
+    admin_register, admin_revoke, close_registrar, create_registrar, delete_subdomain_record,
     edit_registrar, nft_owner_revoke, register, unregister,
 };
 use {
@@ -12,7 +12,7 @@ use {
 #[derive(BorshDeserialize, BorshSerialize, FromPrimitive)]
 pub enum ProgramInstruction {
     /// Create registrar
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -23,7 +23,7 @@ pub enum ProgramInstruction {
     /// | 5     | ❌        | ❌      | The SPL name service program ID      |
     CreateRegistrar,
     /// Edit a registrar
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                |
     /// | ------------------------------------------------------ |
     /// | 0     | ❌        | ❌      | The system program account |
@@ -31,7 +31,7 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ❌      | The registry to edit       |
     EditRegistrar,
     /// Register a subdomain
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                                                                           |
     /// | ----------------------------------------------------------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account                                                            |
@@ -55,7 +55,7 @@ pub enum ProgramInstruction {
     /// | 18    | ✅        | ❌      | Optional NFT mint record to keep track of how many domains were created with this NFT |
     Register,
     /// Unregister a subdomain
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -67,7 +67,7 @@ pub enum ProgramInstruction {
     /// | 6     | ✅        | ❌      |                                      |
     Unregister,
     /// Close a registrar account
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                              |
     /// | -------------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account               |
@@ -79,7 +79,7 @@ pub enum ProgramInstruction {
     /// | 6     | ❌        | ❌      | The SPL name service program ID          |
     CloseRegistrar,
     /// Allow the authority of a `Registrar` to register a subdomain without token transfer
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                          |
     /// | ---------------------------------------------------------------- |
     /// | 0     | ❌        | ❌      | The system program account           |
@@ -97,7 +97,7 @@ pub enum ProgramInstruction {
     /// | 12    | ✅        | ✅      | The fee payer account                |
     AdminRegister,
     /// Delete a subrecord account account
-    /// 
+    ///
     /// | Index | Writable | Signer | Description             |
     /// | --------------------------------------------------- |
     /// | 0     | ✅        | ❌      |                         |
@@ -105,9 +105,9 @@ pub enum ProgramInstruction {
     /// | 2     | ✅        | ❌      | The sub record account  |
     /// | 3     | ✅        | ❌      | The lamports target     |
     /// | 4     | ✅        | ❌      | The mint record account |
-    DeleteSubrecord,
+    DeleteSubdomainRecord,
     /// Allow the authority of a `Registrar` to revoke a subdomain
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                     |
     /// | ----------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The registrar account           |
@@ -121,7 +121,7 @@ pub enum ProgramInstruction {
     /// | 8     | ✅        | ❌      |                                 |
     AdminRevoke,
     /// In the case of ...
-    /// 
+    ///
     /// | Index | Writable | Signer | Description                     |
     /// | ----------------------------------------------------------- |
     /// | 0     | ✅        | ❌      | The registrar account           |
@@ -170,11 +170,15 @@ pub fn admin_register(
 ) -> Instruction {
     accounts.get_instruction(crate::ID, ProgramInstruction::AdminRegister as u8, params)
 }
-pub fn delete_subrecord(
-    accounts: delete_subrecord::Accounts<Pubkey>,
-    params: delete_subrecord::Params,
+pub fn delete_subdomain_record(
+    accounts: delete_subdomain_record::Accounts<Pubkey>,
+    params: delete_subdomain_record::Params,
 ) -> Instruction {
-    accounts.get_instruction(crate::ID, ProgramInstruction::DeleteSubrecord as u8, params)
+    accounts.get_instruction(
+        crate::ID,
+        ProgramInstruction::DeleteSubdomainRecord as u8,
+        params,
+    )
 }
 pub fn admin_revoke(
     accounts: admin_revoke::Accounts<Pubkey>,

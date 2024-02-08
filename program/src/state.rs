@@ -7,7 +7,7 @@ use {
 pub mod mint_record;
 pub mod registry;
 pub mod schedule;
-pub mod subrecord;
+pub mod subdomain_record;
 
 pub const ROOT_DOMAIN_ACCOUNT: Pubkey = sns_registrar::constants::ROOT_DOMAIN_ACCOUNT;
 

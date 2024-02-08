@@ -2,7 +2,7 @@
 use crate::{
     cpi::Cpi,
     error::SubRegisterError,
-    state::{registry::Registrar, subrecord::SubRecord, Tag, ROOT_DOMAIN_ACCOUNT},
+    state::{registry::Registrar, subdomain_record::SubDomainRecord, Tag, ROOT_DOMAIN_ACCOUNT},
 };
 use sns_registrar::processor::create_reverse;
 
@@ -136,7 +136,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let (subrecord_key, subrecord_nonce) =
-        SubRecord::find_key(accounts.sub_domain_account.key, program_id);
+        SubDomainRecord::find_key(accounts.sub_domain_account.key, program_id);
     let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
     check_account_key(accounts.authority, &registrar.authority)?;
@@ -249,9 +249,10 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Create subrecord account
-    let sub_record = SubRecord::new(*accounts.registrar.key, *accounts.sub_domain_account.key);
+    let sub_record =
+        SubDomainRecord::new(*accounts.registrar.key, *accounts.sub_domain_account.key);
     let seeds: &[&[u8]] = &[
-        SubRecord::SEEDS,
+        SubDomainRecord::SEEDS,
         &accounts.sub_domain_account.key.to_bytes(),
         &[subrecord_nonce],
     ];

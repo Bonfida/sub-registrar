@@ -13,7 +13,7 @@ pub mod admin_register;
 pub mod admin_revoke;
 pub mod close_registrar;
 pub mod create_registrar;
-pub mod delete_subrecord;
+pub mod delete_subdomain_record;
 pub mod edit_registrar;
 pub mod nft_owner_revoke;
 pub mod register;
@@ -70,11 +70,11 @@ impl Processor {
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
                 admin_register::process(program_id, accounts, params)?;
             }
-            ProgramInstruction::DeleteSubrecord => {
+            ProgramInstruction::DeleteSubdomainRecord => {
                 msg!("[+] Instruction: Delete sub record Instruction");
-                let params = delete_subrecord::Params::try_from_slice(instruction_data)
+                let params = delete_subdomain_record::Params::try_from_slice(instruction_data)
                     .map_err(|_| ProgramError::InvalidInstructionData)?;
-                delete_subrecord::process(program_id, accounts, params)?;
+                delete_subdomain_record::process(program_id, accounts, params)?;
             }
             ProgramInstruction::AdminRevoke => {
                 msg!("[+] Instruction: Admin revoke instruction");
