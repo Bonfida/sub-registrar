@@ -9,14 +9,5 @@ pub struct Price {
     pub price: u64,
 }
 
-impl Default for Price {
-    fn default() -> Self {
-        Self {
-            length: 0,
-            price: u64::MAX,
-        }
-    }
-}
-
 // Assumes the `Schedule` is ordered in ascending order on the `Price.length`
 pub type Schedule = Vec<Price>;

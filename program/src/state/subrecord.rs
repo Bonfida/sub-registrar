@@ -44,9 +44,3 @@ impl SubRecord {
         Ok(result)
     }
 }
-
-impl Default for SubRecord {
-    fn default() -> Self {
-        Self::new(Pubkey::default(), Pubkey::default())
-    }
-}

@@ -45,9 +45,3 @@ impl MintRecord {
         Ok(result)
     }
 }
-
-impl Default for MintRecord {
-    fn default() -> Self {
-        Self::new(&Pubkey::default())
-    }
-}

@@ -198,7 +198,7 @@ async fn test_state() {
     let bonfida_fee_account = &get_associated_token_address(&FEE_ACC_OWNER, &mint);
 
     // Alice creates registry
-    let (registry_key, nonce) = Registrar::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
+    let (registry_key, nonce) = Registrar::find_key(&name_key, &sub_register::ID);
     println!("[+] Registry key {}", registry_key);
 
     let ix = create_registrar(

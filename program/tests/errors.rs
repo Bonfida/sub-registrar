@@ -255,7 +255,7 @@ async fn test_errors() {
     let bonfida_fee_account = &get_associated_token_address(&FEE_ACC_OWNER, &mint);
 
     // Alice creates regis&try
-    let (registry_key, _) = Registrar::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
+    let (registry_key, _) = Registrar::find_key(&name_key, &sub_register::ID);
     println!("[+] Registry key {}", registry_key);
 
     let ix = create_registrar(
@@ -366,8 +366,7 @@ async fn test_errors() {
     ////////////////////////////////
 
     // Test: Non .sol domain for registry
-    let (fake_registry_key, _) =
-        Registrar::find_key(&fake_name_key, &alice.pubkey(), &sub_register::ID);
+    let (fake_registry_key, _) = Registrar::find_key(&fake_name_key, &sub_register::ID);
     println!("[+] Fake registry key {}", fake_registry_key);
 
     let ix = create_registrar(
@@ -1462,7 +1461,7 @@ async fn test_errors_nft() {
     let bonfida_fee_account = &get_associated_token_address(&FEE_ACC_OWNER, &mint);
 
     // Alice creates regis&try
-    let (registry_key, _) = Registrar::find_key(&name_key, &alice.pubkey(), &sub_register::ID);
+    let (registry_key, _) = Registrar::find_key(&name_key, &sub_register::ID);
     println!("[+] Registry key {}", registry_key);
 
     let ix = create_registrar(

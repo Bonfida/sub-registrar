@@ -53,19 +53,8 @@ impl Registrar {
         }
     }
 
-    pub fn find_key(
-        domain_account: &Pubkey,
-        authority: &Pubkey,
-        program_id: &Pubkey,
-    ) -> (Pubkey, u8) {
-        Pubkey::find_program_address(
-            &[
-                Registrar::SEEDS,
-                &domain_account.to_bytes(),
-                &authority.to_bytes(),
-            ],
-            program_id,
-        )
+    pub fn find_key(domain_account: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[Registrar::SEEDS, &domain_account.to_bytes()], program_id)
     }
 
     pub fn save(&self, mut dst: &mut [u8]) {

@@ -94,11 +94,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let (registrar_key, nonce) = Registrar::find_key(
-        accounts.domain_name_account.key,
-        &params.authority,
-        program_id,
-    );
+    let (registrar_key, nonce) = Registrar::find_key(accounts.domain_name_account.key, program_id);
     check_account_key(accounts.registrar, &registrar_key)?;
 
     // Checks
