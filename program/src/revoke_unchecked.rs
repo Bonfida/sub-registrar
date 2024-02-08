@@ -3,7 +3,7 @@
 use crate::{
     cpi::Cpi,
     error::SubRegisterError,
-    state::{mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag},
+    state::{mint_record::MintRecord, registry::Registrar, subdomain_record::SubDomainRecord, Tag},
 };
 
 use solana_program::{
@@ -14,7 +14,7 @@ use solana_program::{
 #[allow(clippy::too_many_arguments)]
 pub fn revoke_unchecked<'a>(
     mut registrar: Registrar,
-    mut sub_record: SubRecord,
+    mut sub_record: SubDomainRecord,
     mint_record: Option<MintRecord>,
     registrar_account: &AccountInfo<'a>,
     subdomain_account: &AccountInfo<'a>,

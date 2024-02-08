@@ -7,8 +7,8 @@ use crate::{
     cpi::Cpi,
     error::SubRegisterError,
     state::{
-        mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag, FEE_ACC_OWNER,
-        FEE_PCT, ROOT_DOMAIN_ACCOUNT,
+        mint_record::MintRecord, registry::Registrar, subdomain_record::SubDomainRecord, Tag,
+        FEE_ACC_OWNER, FEE_PCT, ROOT_DOMAIN_ACCOUNT,
     },
     utils,
     utils::{check_metadata, check_nft_holding_and_get_mint, get_subdomain_reverse},
@@ -170,7 +170,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
     let (subrecord_key, subrecord_nonce) =
-        SubRecord::find_key(accounts.sub_domain_account.key, program_id);
+        SubDomainRecord::find_key(accounts.sub_domain_account.key, program_id);
     let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
     check_account_key(accounts.fee_account, &registrar.fee_account)?;
@@ -392,10 +392,11 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Create subrecord account
-    let mut sub_record = SubRecord::new(*accounts.registrar.key, *accounts.sub_domain_account.key);
+    let mut sub_record =
+        SubDomainRecord::new(*accounts.registrar.key, *accounts.sub_domain_account.key);
     sub_record.mint_record = mint_record_key;
     let seeds: &[&[u8]] = &[
-        SubRecord::SEEDS,
+        SubDomainRecord::SEEDS,
         &accounts.sub_domain_account.key.to_bytes(),
         &[subrecord_nonce],
     ];

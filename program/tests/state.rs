@@ -4,12 +4,12 @@ use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
     instruction::{
-        admin_register, admin_revoke, close_registrar, create_registrar, delete_subrecord,
+        admin_register, admin_revoke, close_registrar, create_registrar, delete_subdomain_record,
         edit_registrar, nft_owner_revoke, register, unregister,
     },
     state::{
-        mint_record::MintRecord, registry::Registrar, schedule::Price, subrecord::SubRecord, Tag,
-        FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
+        mint_record::MintRecord, registry::Registrar, schedule::Price,
+        subdomain_record::SubDomainRecord, Tag, FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
     },
     utils::get_subdomain_key,
 };
@@ -549,7 +549,7 @@ async fn test_state() {
     let sub_domain = random_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
-    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (subrecord_key, _) = SubDomainRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain
     let ix = register(
@@ -707,7 +707,7 @@ async fn test_state() {
     let sub_domain = "1".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
-    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (subrecord_key, _) = SubDomainRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain of length 1
     let ix = register(
@@ -764,7 +764,7 @@ async fn test_state() {
     let sub_domain = "1⛽️".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
-    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (subrecord_key, _) = SubDomainRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain of length 2
     let ix = register(
@@ -811,8 +811,11 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let subrecord: SubRecord = SubRecord::deserialize(&mut &acc.data[..]).unwrap();
-    assert_eq!(subrecord, SubRecord::new(registry_key, sub_domain_key));
+    let subrecord: SubDomainRecord = SubDomainRecord::deserialize(&mut &acc.data[..]).unwrap();
+    assert_eq!(
+        subrecord,
+        SubDomainRecord::new(registry_key, sub_domain_key)
+    );
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -832,7 +835,7 @@ async fn test_state() {
     let sub_domain = "1⛽️🚦".to_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
-    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (subrecord_key, _) = SubDomainRecord::find_key(&sub_domain_key, &sub_register::ID);
 
     // Bob registers a subdomain of length 3
     let ix = register(
@@ -879,8 +882,11 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let subrecord: SubRecord = SubRecord::deserialize(&mut &acc.data[..]).unwrap();
-    assert_eq!(subrecord, SubRecord::new(registry_key, sub_domain_key));
+    let subrecord: SubDomainRecord = SubDomainRecord::deserialize(&mut &acc.data[..]).unwrap();
+    assert_eq!(
+        subrecord,
+        SubDomainRecord::new(registry_key, sub_domain_key)
+    );
 
     // Verify fees received
     let acc = prg_test_ctx
@@ -909,7 +915,7 @@ async fn test_state() {
                     registrar: &registry_key,
                     sub_domain_account: &get_subdomain_key("1", &name_key),
                     domain_owner: &bob.pubkey(),
-                    sub_record: &SubRecord::find_key(
+                    sub_record: &SubDomainRecord::find_key(
                         &get_subdomain_key("1", &name_key),
                         &sub_register::ID,
                     )
@@ -925,7 +931,7 @@ async fn test_state() {
                     registrar: &registry_key,
                     sub_domain_account: &get_subdomain_key("1⛽️", &name_key),
                     domain_owner: &bob.pubkey(),
-                    sub_record: &SubRecord::find_key(
+                    sub_record: &SubDomainRecord::find_key(
                         &get_subdomain_key("1⛽️", &name_key),
                         &sub_register::ID,
                     )
@@ -941,7 +947,7 @@ async fn test_state() {
                     registrar: &registry_key,
                     sub_domain_account: &get_subdomain_key("1⛽️🚦", &name_key),
                     domain_owner: &bob.pubkey(),
-                    sub_record: &SubRecord::find_key(
+                    sub_record: &SubDomainRecord::find_key(
                         &get_subdomain_key("1⛽️🚦", &name_key),
                         &sub_register::ID,
                     )
@@ -968,7 +974,7 @@ async fn test_state() {
     let sub_domain = random_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
-    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (subrecord_key, _) = SubDomainRecord::find_key(&sub_domain_key, &sub_register::ID);
     sign_send_instructions(
         &mut prg_test_ctx,
         vec![admin_register(
@@ -1012,8 +1018,11 @@ async fn test_state() {
         .await
         .unwrap()
         .unwrap();
-    let subrecord: SubRecord = SubRecord::deserialize(&mut &acc.data[..]).unwrap();
-    assert_eq!(subrecord, SubRecord::new(registry_key, sub_domain_key));
+    let subrecord: SubDomainRecord = SubDomainRecord::deserialize(&mut &acc.data[..]).unwrap();
+    assert_eq!(
+        subrecord,
+        SubDomainRecord::new(registry_key, sub_domain_key)
+    );
 
     // Unregister admin created sub
     sign_send_instructions(
@@ -1258,7 +1267,7 @@ async fn test_state() {
     let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_to_revoke = sub_domain_key;
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
-    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (subrecord_key, _) = SubDomainRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record_key, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
         &registry_key,
@@ -1308,10 +1317,10 @@ async fn test_state() {
     assert_eq!(mint_record, expected_mint_record);
     let sub_record = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<SubRecord>(subrecord_key)
+        .get_account_data_with_borsh::<SubDomainRecord>(subrecord_key)
         .await
         .unwrap();
-    let expected_sub_record = SubRecord {
+    let expected_sub_record = SubDomainRecord {
         tag: Tag::SubRecord,
         registrar: registry_key,
         mint_record: Some(mint_record_key),
@@ -1323,7 +1332,7 @@ async fn test_state() {
     let sub_domain = random_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
-    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (subrecord_key, _) = SubDomainRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record_key, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
         &registry_key,
@@ -1425,7 +1434,7 @@ async fn test_state() {
         nft_owner_revoke::Accounts {
             registrar: &registry_key,
             sub_domain_account: &sub_to_revoke,
-            sub_record: &SubRecord::find_key(&sub_to_revoke, &sub_register::ID).0,
+            sub_record: &SubDomainRecord::find_key(&sub_to_revoke, &sub_register::ID).0,
             sub_owner: &bob.pubkey(),
             parent_domain: &name_key,
             nft_account: &bob_nft_account,
@@ -1466,7 +1475,7 @@ async fn test_state() {
     let sub_domain = random_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
-    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (subrecord_key, _) = SubDomainRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record_key, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
         &registry_key,
@@ -1554,7 +1563,7 @@ async fn test_state() {
     let sub_domain = random_string();
     let sub_domain_key = sub_register::utils::get_subdomain_key(&sub_domain, &name_key);
     let sub_reverse_key = sub_register::utils::get_subdomain_reverse(&sub_domain, &name_key);
-    let (subrecord_key, _) = SubRecord::find_key(&sub_domain_key, &sub_register::ID);
+    let (subrecord_key, _) = SubDomainRecord::find_key(&sub_domain_key, &sub_register::ID);
     let (mint_record_key, _) = MintRecord::find_key(
         &common::metadata::NFT_MINT,
         &registry_key,
@@ -1617,15 +1626,15 @@ async fn test_state() {
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&bob])
         .await
         .unwrap();
-    let ix = delete_subrecord(
-        delete_subrecord::Accounts {
+    let ix = delete_subdomain_record(
+        delete_subdomain_record::Accounts {
             sub_domain: &sub_domain_key,
             lamports_target: &bob.pubkey(),
             sub_record: &subrecord_key,
             mint_record: Some(&mint_record_key),
             registrar: &registry_key,
         },
-        delete_subrecord::Params {},
+        delete_subdomain_record::Params {},
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
         .await

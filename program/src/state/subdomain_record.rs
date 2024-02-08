@@ -8,14 +8,14 @@ use {
 
 // SubRecord are used to keep track of subs minted via a specific registrar
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Eq, BorshSize)]
-pub struct SubRecord {
+pub struct SubDomainRecord {
     pub tag: Tag,
     pub registrar: Pubkey,
     pub sub_key: Pubkey,
     pub mint_record: Option<Pubkey>,
 }
 
-impl SubRecord {
+impl SubDomainRecord {
     pub const SEEDS: &'static [u8; 9] = b"subrecord";
 
     pub fn new(registrar: Pubkey, sub_key: Pubkey) -> Self {
@@ -28,19 +28,25 @@ impl SubRecord {
     }
 
     pub fn find_key(domain_account: &Pubkey, program_id: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::find_program_address(&[SubRecord::SEEDS, &domain_account.to_bytes()], program_id)
+        Pubkey::find_program_address(
+            &[SubDomainRecord::SEEDS, &domain_account.to_bytes()],
+            program_id,
+        )
     }
 
     pub fn save(&self, mut dst: &mut [u8]) {
         self.serialize(&mut dst).unwrap()
     }
 
-    pub fn from_account_info(a: &AccountInfo, tag: super::Tag) -> Result<SubRecord, ProgramError> {
+    pub fn from_account_info(
+        a: &AccountInfo,
+        tag: super::Tag,
+    ) -> Result<SubDomainRecord, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
         if data[0] != tag as u8 && data[0] != super::Tag::Uninitialized as u8 {
             return Err(SubRegisterError::DataTypeMismatch.into());
         }
-        let result = SubRecord::deserialize(&mut data)?;
+        let result = SubDomainRecord::deserialize(&mut data)?;
         Ok(result)
     }
 }

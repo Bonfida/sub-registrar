@@ -3,7 +3,7 @@
 use crate::{
     error::SubRegisterError,
     revoke_unchecked,
-    state::{mint_record::MintRecord, registry::Registrar, subrecord::SubRecord, Tag},
+    state::{mint_record::MintRecord, registry::Registrar, subdomain_record::SubDomainRecord, Tag},
 };
 
 use {
@@ -95,10 +95,10 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
 
-    let sub_record = SubRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
+    let sub_record = SubDomainRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
     let registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
-    let (subrecord_key, _) = SubRecord::find_key(accounts.sub_domain_account.key, program_id);
+    let (subrecord_key, _) = SubDomainRecord::find_key(accounts.sub_domain_account.key, program_id);
 
     check_account_key(accounts.authority, &registrar.authority)?;
     check_account_key(accounts.sub_record, &subrecord_key)?;
