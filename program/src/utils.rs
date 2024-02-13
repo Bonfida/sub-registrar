@@ -14,14 +14,13 @@ use {
 pub fn get_domain_price(domain: String, schedule: &Schedule) -> u64 {
     let ui_domain = domain.strip_prefix('\0').unwrap();
     let len = ui_domain.graphemes(true).count() as u64;
-    for price in schedule {
-        if len == price.length {
-            return price.price;
-        }
-    }
-    // Less expensive price
-    let last = schedule.last().unwrap();
-    last.price
+    let price_index = schedule
+        .iter()
+        .enumerate()
+        .find_map(|(idx, p)| if p.length > len { Some(idx) } else { None })
+        .unwrap_or(schedule.len())
+        .saturating_sub(1);
+    schedule[price_index].price
 }
 
 pub fn get_subdomain_key(ui_subdomain: &str, parent: &Pubkey) -> Pubkey {
@@ -148,6 +147,60 @@ mod tests {
         assert_eq!(
             get_domain_price("\x0011😀1111111".to_string(), &schedule),
             60
+        );
+
+        let schedule_holes: Schedule = vec![
+            Price {
+                length: 1,
+                price: 100,
+            },
+            Price {
+                length: 4,
+                price: 90,
+            },
+            Price {
+                length: 6,
+                price: 80,
+            },
+            Price {
+                length: 8,
+                price: 70,
+            },
+            Price {
+                length: 11,
+                price: 60,
+            },
+        ];
+
+        assert_eq!(get_domain_price("\x001".to_string(), &schedule_holes), 100);
+        assert_eq!(get_domain_price("\x0011".to_string(), &schedule_holes), 100);
+        assert_eq!(
+            get_domain_price("\x00111".to_string(), &schedule_holes),
+            100
+        );
+        assert_eq!(
+            get_domain_price("\x001111".to_string(), &schedule_holes),
+            90
+        );
+        assert_eq!(
+            get_domain_price("\x0011111".to_string(), &schedule_holes),
+            90
+        );
+        assert_eq!(
+            get_domain_price("\x00111111".to_string(), &schedule_holes),
+            80
+        );
+        assert_eq!(
+            get_domain_price("\x001111111".to_string(), &schedule_holes),
+            80
+        );
+        assert_eq!(
+            get_domain_price("\x0011111111".to_string(), &schedule_holes),
+            70
+        );
+        assert_eq!(
+            get_domain_price("\x00111111111".to_string(), &schedule_holes),
+            70
         );
     }
 
