@@ -10,6 +10,7 @@ import {
 import {
   AccountLayout,
   TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountIdempotentInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import {
@@ -17,6 +18,7 @@ import {
   PublicKey,
   SystemProgram,
   SYSVAR_RENT_PUBKEY,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import {
   deleteSubrecordInstruction,
@@ -146,6 +148,7 @@ export const register = async (
   nftAccount: PublicKey,
   subDomain: string
 ) => {
+  const ixs: TransactionInstruction[] = [];
   const obj = await Registrar.retrieve(connection, registrar);
   const parent = await reverseLookup(connection, obj.domain);
 
@@ -168,6 +171,16 @@ export const register = async (
 
   const feeSource = getAssociatedTokenAddressSync(obj.mint, buyer, true);
   const bonfidaFee = getAssociatedTokenAddressSync(obj.mint, FEE_OWNER, true);
+
+  if (!(await connection.getAccountInfo(bonfidaFee))) {
+    const ixCreateFee = createAssociatedTokenAccountIdempotentInstruction(
+      buyer,
+      bonfidaFee,
+      FEE_OWNER,
+      obj.mint
+    );
+    ixs.push(ixCreateFee);
+  }
 
   const ix = new registerInstruction({
     domain: `\0`.concat(subDomain),
@@ -193,8 +206,9 @@ export const register = async (
     nftMetadata,
     nftMintRecord
   );
+  ixs.push(ix);
 
-  return [ix];
+  return ixs;
 };
 
 export const deleteSubrecord = async (
