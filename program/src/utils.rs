@@ -14,13 +14,14 @@ use {
 pub fn get_domain_price(domain: String, schedule: &Schedule) -> u64 {
     let ui_domain = domain.strip_prefix('\0').unwrap();
     let len = ui_domain.graphemes(true).count() as u64;
-    let price_index = schedule
-        .iter()
-        .enumerate()
-        .find_map(|(idx, p)| if p.length >= len { Some(idx) } else { None })
-        .unwrap_or(schedule.len())
-        .saturating_sub(1);
-    schedule[price_index].price
+    for price in schedule {
+        if len == price.length {
+            return price.price;
+        }
+    }
+    // Less expensive price
+    let last = schedule.last().unwrap();
+    last.price
 }
 
 pub fn get_subdomain_key(ui_subdomain: &str, parent: &Pubkey) -> Pubkey {

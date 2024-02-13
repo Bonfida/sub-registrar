@@ -109,7 +109,6 @@ impl Cpi {
         let seeds: &[&[u8]] = &[
             Registrar::SEEDS,
             &registrar.domain_account.to_bytes(),
-            &registrar.authority.to_bytes(),
             &[registrar.nonce],
         ];
         invoke_signed(
