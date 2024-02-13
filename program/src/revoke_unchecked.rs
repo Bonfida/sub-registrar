@@ -39,7 +39,6 @@ pub fn revoke_unchecked<'a>(
     let seeds: &[&[u8]] = &[
         Registrar::SEEDS,
         &registrar.domain_account.to_bytes(),
-        &registrar.authority.to_bytes(),
         &[registrar.nonce],
     ];
     let ix = spl_name_service::instruction::delete(

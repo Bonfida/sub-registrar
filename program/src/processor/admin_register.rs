@@ -193,7 +193,6 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     let seeds: &[&[u8]] = &[
         Registrar::SEEDS,
         &registrar.domain_account.to_bytes(),
-        &registrar.authority.to_bytes(),
         &[registrar.nonce],
     ];
     invoke_signed(

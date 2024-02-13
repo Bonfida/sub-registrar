@@ -128,7 +128,6 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     let seeds: &[&[u8]] = &[
         Registrar::SEEDS,
         &accounts.domain_name_account.key.to_bytes(),
-        &params.authority.to_bytes(),
         &[nonce],
     ];
     let registry = Registrar::new(
