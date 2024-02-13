@@ -104,7 +104,6 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
     let seeds: &[&[u8]] = &[
         Registrar::SEEDS,
         &accounts.domain_name_account.key.to_bytes(),
-        &registrar.authority.to_bytes(),
         &[registrar.nonce],
     ];
     let ix = spl_name_service::instruction::transfer(

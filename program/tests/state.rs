@@ -219,11 +219,11 @@ async fn test_state() {
             authority: alice.pubkey(),
             price_schedule: (vec![
                 Price {
-                    length: 2,
+                    length: 1,
                     price: 10_000_000,
                 },
                 Price {
-                    length: 1,
+                    length: 2,
                     price: 10_000_000,
                 },
             ]),
@@ -633,22 +633,21 @@ async fn test_state() {
 
     // Change price schedule + register + verify
     let var_name = vec![
-        // Not in the right order in purpose
-        Price {
-            length: 2,
-            price: 8_000_000,
-        },
-        Price {
-            length: 4,
-            price: 6_000_000,
-        },
         Price {
             length: 1,
             price: 10_000_000,
         },
         Price {
+            length: 2,
+            price: 8_000_000,
+        },
+        Price {
             length: 3,
             price: 7_000_000,
+        },
+        Price {
+            length: 4,
+            price: 6_000_000,
         },
         Price {
             length: 5,
@@ -1112,11 +1111,11 @@ async fn test_state() {
             authority: alice.pubkey(),
             price_schedule: (vec![
                 Price {
-                    length: 2,
+                    length: 1,
                     price: 10_000_000,
                 },
                 Price {
-                    length: 1,
+                    length: 2,
                     price: 10_000_000,
                 },
             ]),

@@ -329,7 +329,6 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     let seeds: &[&[u8]] = &[
         Registrar::SEEDS,
         &registrar.domain_account.to_bytes(),
-        &registrar.authority.to_bytes(),
         &[registrar.nonce],
     ];
     invoke_signed(
@@ -346,8 +345,10 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         &[seeds],
     )?;
 
-    let expected_sub_reverse_key =
-        get_subdomain_reverse(&params.domain, accounts.parent_domain_account.key);
+    let expected_sub_reverse_key = get_subdomain_reverse(
+        params.domain.strip_prefix('\x00').unwrap(),
+        accounts.parent_domain_account.key,
+    );
 
     if accounts.sub_reverse_account.key != &expected_sub_reverse_key {
         return Err(ProgramError::InvalidArgument);

@@ -489,11 +489,11 @@ async fn test_functional() {
             authority: alice.pubkey(),
             price_schedule: (vec![
                 Price {
-                    length: 2,
+                    length: 1,
                     price: 10_000_000,
                 },
                 Price {
-                    length: 1,
+                    length: 2,
                     price: 10_000_000,
                 },
             ]),
