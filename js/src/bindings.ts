@@ -21,7 +21,7 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import {
-  deleteSubrecordInstruction,
+  deleteSubdomainRecordInstruction,
   editRegistrarInstruction,
   adminRegisterInstruction,
   adminRevokeInstruction,
@@ -36,6 +36,7 @@ import {
   MintRecord,
   Registrar,
   Schedule,
+  serializePriceSchedule,
   SubRecord,
 } from "./state";
 
@@ -80,7 +81,7 @@ export const createRegistrar = async (
       : null,
     maxNftMint: maxNftMint || 0,
     allowRevoke,
-    priceSchedule: formatSchedule(schedule),
+    priceSchedule: Array.from(serializePriceSchedule(schedule)),
   }).getInstruction(
     SUB_REGISTER_ID,
     SystemProgram.programId,
@@ -129,7 +130,7 @@ export const editRegistrar = async (
     newMint: newMint ? newMint.toBuffer() : null,
     newFeeAccount: newFeeAccount ? newFeeAccount.toBuffer() : null,
     newPriceSchedule: newPriceSchedule
-      ? formatSchedule(newPriceSchedule)
+      ? Array.from(serializePriceSchedule(newPriceSchedule))
       : null,
     newMaxNftMint: newMaxNftMint ? newMaxNftMint : null,
   }).getInstruction(
@@ -226,7 +227,7 @@ export const deleteSubrecord = async (
     mintRecord = obj.mintRecord;
   }
 
-  const ix = new deleteSubrecordInstruction().getInstruction(
+  const ix = new deleteSubdomainRecordInstruction().getInstruction(
     SUB_REGISTER_ID,
     registrar,
     subDomain,

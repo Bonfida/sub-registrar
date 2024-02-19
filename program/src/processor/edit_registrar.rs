@@ -1,6 +1,9 @@
 //! Edit a registrar
 
-use crate::state::{registry::Registrar, schedule::Price, Tag};
+use crate::{
+    state::{registry::Registrar, schedule::Price, Tag},
+    utils::is_price_schedule_sorted,
+};
 
 use {
     bonfida_utils::checks::check_account_owner,
@@ -29,7 +32,7 @@ pub struct Params {
     pub new_authority: Option<Pubkey>,
     pub new_mint: Option<Pubkey>,
     pub new_fee_account: Option<Pubkey>,
-    pub new_price_schedule: Option<Vec<Price>>,
+    pub new_price_schedule: Option<Vec<u8>>,
     pub new_max_nft_mint: Option<u8>,
 }
 
@@ -90,25 +93,14 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         registrar.fee_account = new_fee_account;
     }
 
-    if let Some(new_price_schedule) = params.new_price_schedule {
-        let sorted = new_price_schedule
-            .iter()
-            .try_fold(
-                0,
-                |acc, p| {
-                    if p.length < acc {
-                        None
-                    } else {
-                        Some(p.length)
-                    }
-                },
-            )
-            .is_some();
+    if let Some(new_price_schedule_ser) = params.new_price_schedule {
+        let new_price_schedule: Vec<Price> =
+            BorshDeserialize::deserialize(&mut new_price_schedule_ser.as_slice())?;
+        let sorted = is_price_schedule_sorted(&new_price_schedule);
         if !sorted {
             msg!("The schedule price array should be sorted!");
             return Err(ProgramError::InvalidArgument);
         }
-        // new_price_schedule.sort_by_key(|x| x.length);
         registrar.price_schedule = new_price_schedule;
     }
 

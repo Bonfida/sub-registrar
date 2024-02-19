@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use borsh::BorshSerialize;
 use solana_program::instruction::Instruction;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
@@ -8,7 +9,7 @@ use solana_sdk::account::Account;
 use solana_sdk::signature::Signer;
 use solana_sdk::{signature::Keypair, transaction::Transaction};
 use spl_token::state::Mint;
-use sub_register::state::schedule::Schedule;
+use sub_register::state::schedule::{Price, Schedule};
 
 // Utils
 pub async fn sign_send_instructions(
@@ -70,4 +71,10 @@ pub fn convert_schedule(schedule: Schedule) -> Vec<Vec<u64>> {
         res.push(vec![x.length, x.price])
     }
     res
+}
+
+pub fn serialize_price_schedule(price_schedule: &[Price]) -> Vec<u8> {
+    let mut data: Vec<u8> = vec![];
+    price_schedule.serialize(&mut data).unwrap();
+    data
 }
