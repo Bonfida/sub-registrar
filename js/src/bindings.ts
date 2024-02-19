@@ -32,7 +32,6 @@ import {
   unregisterInstruction,
 } from "./raw_instructions";
 import {
-  formatSchedule,
   MintRecord,
   Registrar,
   Schedule,
@@ -71,7 +70,7 @@ export const createRegistrar = async (
   allowRevoke: boolean
 ) => {
   const { pubkey } = getDomainKeySync(domain);
-  const [registrar] = Registrar.findKey(pubkey, authority, SUB_REGISTER_ID);
+  const [registrar] = Registrar.findKey(pubkey, SUB_REGISTER_ID);
   const ix = new createRegistrarInstruction({
     mint: mint.toBuffer(),
     feeAccount: feeAccount.toBuffer(),

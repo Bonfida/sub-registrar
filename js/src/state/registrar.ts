@@ -119,13 +119,9 @@ export class Registrar {
     });
   }
 
-  static findKey(
-    domain: PublicKey,
-    authority: PublicKey,
-    programId: PublicKey
-  ) {
+  static findKey(domain: PublicKey, programId: PublicKey) {
     return PublicKey.findProgramAddressSync(
-      [Buffer.from(Registrar.SEED), domain.toBuffer(), authority.toBuffer()],
+      [Buffer.from(Registrar.SEED), domain.toBuffer()],
       programId
     );
   }
