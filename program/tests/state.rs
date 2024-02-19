@@ -217,7 +217,7 @@ async fn test_state() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: (vec![
+            price_schedule: common::utils::serialize_price_schedule(&vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -266,7 +266,7 @@ async fn test_state() {
     assert_eq!(registrar, expected_registrar);
 
     // Increase vec size
-    let var_name = vec![
+    let price_schedule = vec![
         Price {
             length: 1,
             price: 10_000_000,
@@ -291,7 +291,7 @@ async fn test_state() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(var_name),
+            new_price_schedule: Some(common::utils::serialize_price_schedule(&price_schedule)),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -322,7 +322,7 @@ async fn test_state() {
     assert_eq!(registrar, expected_registrar);
 
     // Decrease vec size
-    let var_name = vec![
+    let price_schedule = vec![
         Price {
             length: 1,
             price: 10_000_000,
@@ -343,7 +343,7 @@ async fn test_state() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(var_name),
+            new_price_schedule: Some(common::utils::serialize_price_schedule(&price_schedule)),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -632,7 +632,7 @@ async fn test_state() {
     assert_eq!(token_account.amount, 8_000_000 - total_fees);
 
     // Change price schedule + register + verify
-    let var_name = vec![
+    let price_schedule = vec![
         Price {
             length: 1,
             price: 10_000_000,
@@ -665,7 +665,7 @@ async fn test_state() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(var_name),
+            new_price_schedule: Some(common::utils::serialize_price_schedule(&price_schedule)),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1109,7 +1109,7 @@ async fn test_state() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: (vec![
+            price_schedule: common::utils::serialize_price_schedule(&vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -1156,7 +1156,7 @@ async fn test_state() {
     assert_eq!(expected_registrar, registrar);
 
     // Test: edit the registrar
-    let var_name = vec![
+    let price_schedule = vec![
         Price {
             length: 1,
             price: 10_000_000,
@@ -1189,7 +1189,7 @@ async fn test_state() {
             new_authority: Some(alice.pubkey()),
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(var_name),
+            new_price_schedule: Some(common::utils::serialize_price_schedule(&price_schedule)),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])

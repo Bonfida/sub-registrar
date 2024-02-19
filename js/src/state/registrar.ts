@@ -1,4 +1,4 @@
-import { deserialize } from "borsh";
+import { deserialize, serialize } from "borsh";
 import { Connection, MemcmpFilter, PublicKey } from "@solana/web3.js";
 import { Tag } from "./tag";
 import { SUB_REGISTER_ID } from "../";
@@ -135,4 +135,8 @@ export const formatSchedule = (schedule: Schedule[]): bigint[][] => {
   const result: bigint[][] = [];
   schedule.forEach((s) => result.push([BigInt(s.length), BigInt(s.price)]));
   return result;
+};
+
+export const serializePriceSchedule = (schedule: Schedule[]): Uint8Array => {
+  return serialize({ array: { type: Schedule.schema } }, schedule);
 };
