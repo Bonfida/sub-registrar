@@ -3,7 +3,10 @@ use std::convert::TryFrom;
 use mpl_token_metadata::accounts::Metadata;
 use solana_program::{program_error::ProgramError, program_pack::Pack};
 
-use crate::{error::SubRegisterError, state::schedule::Schedule};
+use crate::{
+    error::SubRegisterError,
+    state::schedule::{Price, Schedule},
+};
 
 use {
     solana_program::{account_info::AccountInfo, hash::hashv, pubkey::Pubkey},
@@ -21,6 +24,22 @@ pub fn get_domain_price(domain: String, schedule: &Schedule) -> u64 {
         .unwrap_or(schedule.len())
         .saturating_sub(1);
     schedule[price_index].price
+}
+
+pub fn is_price_schedule_sorted(price_schedule: &[Price]) -> bool {
+    price_schedule
+        .iter()
+        .try_fold(
+            0,
+            |acc, p| {
+                if p.length < acc {
+                    None
+                } else {
+                    Some(p.length)
+                }
+            },
+        )
+        .is_some()
 }
 
 pub fn get_subdomain_key(ui_subdomain: &str, parent: &Pubkey) -> Pubkey {

@@ -213,7 +213,7 @@ async fn test_functional() {
             max_nft_mint: 0,
             allow_revoke: false,
             authority: alice.pubkey(),
-            price_schedule: (vec![
+            price_schedule: common::utils::serialize_price_schedule(&vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -241,7 +241,7 @@ async fn test_functional() {
             new_authority: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(vec![
+            new_price_schedule: Some(common::utils::serialize_price_schedule(&vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -254,7 +254,7 @@ async fn test_functional() {
                     length: 3,
                     price: 5_000_000,
                 },
-            ]),
+            ])),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -262,7 +262,7 @@ async fn test_functional() {
         .unwrap();
 
     // Decrease vec size
-    let var_name = vec![
+    let price_schedule = vec![
         Price {
             length: 1,
             price: 10_000_000,
@@ -283,7 +283,7 @@ async fn test_functional() {
             new_max_nft_mint: None,
             new_mint: None,
             new_fee_account: None,
-            new_price_schedule: Some(var_name),
+            new_price_schedule: Some(common::utils::serialize_price_schedule(&price_schedule)),
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -487,7 +487,7 @@ async fn test_functional() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: (vec![
+            price_schedule: common::utils::serialize_price_schedule(&vec![
                 Price {
                     length: 1,
                     price: 10_000_000,
