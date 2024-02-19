@@ -21,4 +21,4 @@ pub mod utils;
 #[allow(missing_docs)]
 pub mod revoke_unchecked;
 
-declare_id_with_central_state!("4CACAiPpQUn6nZaAr47N2mzxPZE5aBqhZQatjoMSLTAh");
+declare_id_with_central_state!("2KkyPzjaAYaz2ojQZ9P3xYakLd96B5UH6a2isLaZ4Cgs");

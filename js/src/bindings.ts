@@ -46,7 +46,7 @@ import { getMetadataKeyFromMint } from "./utils";
  * Mainnet program ID
  */
 export const SUB_REGISTER_ID = new PublicKey(
-  "4CACAiPpQUn6nZaAr47N2mzxPZE5aBqhZQatjoMSLTAh"
+  "2KkyPzjaAYaz2ojQZ9P3xYakLd96B5UH6a2isLaZ4Cgs"
 );
 
 const FEE_OWNER = new PublicKey("5D2zKog251d6KPCyFyLMt3KroWwXXPWSgTPyhV22K2gR");
@@ -55,7 +55,7 @@ const FEE_OWNER = new PublicKey("5D2zKog251d6KPCyFyLMt3KroWwXXPWSgTPyhV22K2gR");
  * Devnet program ID (might not have the latest version deployed!)
  */
 export const SUB_REGISTER_ID_DEVNET = new PublicKey(
-  "4CACAiPpQUn6nZaAr47N2mzxPZE5aBqhZQatjoMSLTAh"
+  "2KkyPzjaAYaz2ojQZ9P3xYakLd96B5UH6a2isLaZ4Cgs"
 );
 
 export const createRegistrar = async (
