@@ -113,7 +113,11 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
         (None, None) => (None, None),
         (Some(_), Some(mint_record_account)) => {
             check_account_owner(mint_record_account, program_id)?;
+
             let mint_record = MintRecord::from_account_info(mint_record_account, Tag::MintRecord)?;
+
+            check_account_key(mint_record_account, &sub_record.mint_record.unwrap())?;
+
             (Some(mint_record), accounts.mint_record)
         }
     };
