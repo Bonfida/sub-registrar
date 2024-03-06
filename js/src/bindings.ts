@@ -51,12 +51,19 @@ export const SUB_REGISTER_ID = new PublicKey(
 const FEE_OWNER = new PublicKey("5D2zKog251d6KPCyFyLMt3KroWwXXPWSgTPyhV22K2gR");
 
 /**
- * Devnet program ID (might not have the latest version deployed!)
+ * Creates a subdomain registrar with the provided parameters.
+ * @param domain - The domain name as a string.
+ * @param domainOwner - The public key of the domain owner.
+ * @param feePayer - The public key of the entity paying for the transaction fees and account allocation.
+ * @param mint - The public key of the mint used for subdomain issuance payment.
+ * @param authority - The public key of the authority. Used for managing the registrar.
+ * @param schedule - An array of `Schedule` objects defining the price schedule.
+ * @param feeAccount - The public key of the fee account. Must be a token account for the given `mint`.
+ * @param nftGatedCollection - The public key of the NFT gated collection, or null if not applicable.
+ * @param maxNftMint - The maximum number of NFTs that can be minted, or null if not applicable.
+ * @param allowRevoke - A boolean indicating whether revoking by `authority` is allowed.
+ * @returns A promise that resolves to an array containing the transaction instruction.
  */
-export const SUB_REGISTER_ID_DEVNET = new PublicKey(
-  "2KkyPzjaAYaz2ojQZ9P3xYakLd96B5UH6a2isLaZ4Cgs"
-);
-
 export const createRegistrar = async (
   domain: string,
   domainOwner: PublicKey,
@@ -93,6 +100,15 @@ export const createRegistrar = async (
   return [ix];
 };
 
+/**
+ * Closes a subdomain registrar and transfers remaining lamports to a target account.
+ * @param connection - The Solana blockchain connection object.
+ * @param registrar - The public key of the registrar to close.
+ * @param authority - The public key of the current authority of the registrar.
+ * @param newDomainOwner - The public key of the new owner of the domain.
+ * @param lamportsTarget - The public key of the account to receive the remaining lamports.
+ * @returns A promise that resolves to an array containing the transaction instruction.
+ */
 export const closeRegistrar = async (
   connection: Connection,
   registrar: PublicKey,
@@ -114,6 +130,17 @@ export const closeRegistrar = async (
   return [ix];
 };
 
+/**
+ * Updates the registrar with new parameters.
+ * @param connection - The Solana blockchain connection object.
+ * @param registrar - The public key of the registrar to update.
+ * @param newAuthority - The new authority public key, if updating.
+ * @param newMint - The new mint public key, if updating.
+ * @param newFeeAccount - The new fee account public key, if updating. Must be a token account for the current mint.
+ * @param newPriceSchedule - The new price schedule array, if updating.
+ * @param newMaxNftMint - The new maximum NFT mint count, if updating.
+ * @returns A promise that resolves to an array containing the transaction instruction.
+ */
 export const editRegistrar = async (
   connection: Connection,
   registrar: PublicKey,
@@ -141,6 +168,15 @@ export const editRegistrar = async (
   return [ix];
 };
 
+/**
+ * Registers a new subdomain.
+ * @param connection - The Solana blockchain connection object.
+ * @param registrar - The public key of the registrar responsible for the domain.
+ * @param buyer - The public key of the buyer who is registering the subdomain.
+ * @param nftAccount - The public key of the NFT account used for gated access, if applicable.
+ * @param subDomain - The name of the subdomain being registered.
+ * @returns A promise that resolves to an array containing the transaction instructions.
+ */
 export const register = async (
   connection: Connection,
   registrar: PublicKey,
@@ -211,6 +247,15 @@ export const register = async (
   return ixs;
 };
 
+/**
+ * Deletes a subrecord associated with a given subdomain.
+ *
+ * @param connection - The Solana blockchain connection to use.
+ * @param registrar - The public key of the registrar responsible for the subdomain.
+ * @param subDomain - The public key of the subdomain to delete.
+ * @param lamportsTarget - The public key where the lamports will be transferred.
+ * @returns A promise that resolves to an array containing the transaction instruction for deleting the subrecord.
+ */
 export const deleteSubrecord = async (
   connection: Connection,
   registrar: PublicKey,
@@ -237,6 +282,15 @@ export const deleteSubrecord = async (
   return [ix];
 };
 
+/**
+ * Unregisters a subdomain.
+ *
+ * @param connection - The Solana blockchain connection to use.
+ * @param registrar - The public key of the registrar responsible for the subdomain.
+ * @param subDomain - The name of the subdomain to unregister.
+ * @param owner - The public key of the current owner of the subdomain.
+ * @returns A promise that resolves to an array containing the transaction instruction for unregistering the subdomain.
+ */
 export const unregister = async (
   connection: Connection,
   registrar: PublicKey,
@@ -267,6 +321,15 @@ export const unregister = async (
   return [ix];
 };
 
+/**
+ * Registers a subdomain with admin authority. Bypassing the price/nft holding requirements.
+ *
+ * @param connection - The Solana blockchain connection to use.
+ * @param registrar - The public key of the registrar responsible for the domain.
+ * @param subDomain - The name of the subdomain to register.
+ * @param authority - The public key of the administrative authority registering the subdomain.
+ * @returns A promise that resolves to an array containing the transaction instruction for registering the subdomain.
+ */
 export const adminRegister = async (
   connection: Connection,
   registrar: PublicKey,
@@ -300,6 +363,16 @@ export const adminRegister = async (
   return [ix];
 };
 
+/**
+ * Revokes a subdomain if the current owner does not fulfill the NFT holding requirements anymore.
+ *
+ * @param connection - The Solana blockchain connection to use.
+ * @param registrar - The public key of the registrar responsible for the domain.
+ * @param subOwner - The public key of the current owner of the subdomain.
+ * @param nftOwner - The public key of the NFT owner.
+ * @param subDomainAccount - The public key of the subdomain account.
+ * @returns A promise that resolves to an array containing the transaction instruction for revoking the subdomain.
+ */
 export const nftOwnerRevoke = async (
   connection: Connection,
   registrar: PublicKey,
@@ -337,6 +410,16 @@ export const nftOwnerRevoke = async (
   return [ix];
 };
 
+/**
+ * Revokes a subdomain by an admin authority if allowed by the registrar.
+ *
+ * @param connection - The Solana blockchain connection to use.
+ * @param registrar - The public key of the registrar responsible for the domain.
+ * @param subDomain - The name of the subdomain to be revoked.
+ * @param owner - The public key of the current owner of the subdomain.
+ * @param authority - The public key of the admin authority performing the revoke.
+ * @returns A promise that resolves to an array containing the transaction instruction for revoking the subdomain.
+ */
 export const adminRevoke = async (
   connection: Connection,
   registrar: PublicKey,

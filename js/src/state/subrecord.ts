@@ -2,6 +2,7 @@ import { deserialize } from "borsh";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { Tag } from "./tag";
 
+// SubRecord are used to keep track of subs minted via a specific registrar
 export class SubRecord {
   static SEED = "subrecord";
   tag: Tag;

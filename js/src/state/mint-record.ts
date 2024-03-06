@@ -2,6 +2,7 @@ import { deserialize } from "borsh";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { Tag } from "./tag";
 
+// MintRecords are used to keep track of how many domains were minted via a specific NFT ownership.
 export class MintRecord {
   static SEED = "nft_mint_record";
   tag: Tag;
