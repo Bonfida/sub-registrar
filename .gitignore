@@ -1,0 +1,13 @@
+.DS_Store
+target/
+node_modules/
+dist/
+__pycache__
+.env
+.env.production
+.env.development
+*.woff2
+*.woff
+*.ttf
+js/stats.html
+*.tgz
