@@ -127,6 +127,9 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
 
     if let Some(sub_mint_rec) = sub_record.mint_record {
         check_account_key(accounts.nft_mint_record, &sub_mint_rec)?;
+        if mint != mint_record.mint {
+            return Err(SubRegisterError::WrongMint.into());
+        }
     } else {
         return Err(SubRegisterError::WrongMintRecord.into());
     }
