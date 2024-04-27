@@ -73,6 +73,9 @@ impl PrintProgramError for SubRegisterError {
             SubRegisterError::WrongMintRecord => {
                 msg!("[+] Error: Wrong mint record")
             }
+            SubRegisterError::WrongMint => {
+                msg!("[+] Error: Wrong mint")
+            }
         }
     }
 }

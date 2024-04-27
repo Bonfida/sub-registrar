@@ -44,6 +44,8 @@ pub enum SubRegisterError {
     MissingMintRecord,
     #[error("Wrong mint record")]
     WrongMintRecord,
+    #[error("Wrong mint")]
+    WrongMint,
 }
 
 impl From<SubRegisterError> for ProgramError {
