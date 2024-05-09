@@ -38,6 +38,7 @@ pub struct Accounts<'a, T> {
     pub sub_record: &'a T,
 
     /// The current sub domain owner
+    #[cons(writable)]
     pub sub_owner: &'a T,
 
     /// The parent domain
@@ -132,7 +133,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
         accounts.name_class,
         accounts.spl_name_service,
         accounts.sub_record,
-        accounts.authority,
+        accounts.sub_owner,
         mr_acc,
     )?;
 
