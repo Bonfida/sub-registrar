@@ -30,6 +30,8 @@ pub struct Registrar {
     pub allow_revoke: bool,
     // The price schedule for registrations (length based)
     pub price_schedule: schedule::Schedule,
+    // The delay between a subdomain being revoked and it being ready for registration
+    pub revoke_expiry_time: i64,
 }
 
 impl Registrar {
@@ -46,6 +48,7 @@ impl Registrar {
         nft_gated_collection: Option<Pubkey>,
         max_nft_mint: u8,
         allow_revoke: bool,
+        revoke_expiry_time: i64,
     ) -> Self {
         Self {
             tag: super::Tag::Registrar,
@@ -59,6 +62,7 @@ impl Registrar {
             nft_gated_collection,
             max_nft_mint,
             allow_revoke,
+            revoke_expiry_time,
         }
     }
 

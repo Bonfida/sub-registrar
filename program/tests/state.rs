@@ -8,8 +8,11 @@ use sub_register::{
         edit_registrar, nft_owner_revoke, register, unregister,
     },
     state::{
-        mint_record::MintRecord, registry::Registrar, schedule::Price,
-        subdomain_record::SubDomainRecord, Tag, FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
+        mint_record::MintRecord,
+        registry::Registrar,
+        schedule::Price,
+        subdomain_record::{SubDomainRecord, REVOKE_EXPIRY_DELAY_SECONDS_MIN},
+        Tag, FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
     },
     utils::get_subdomain_key,
 };
@@ -227,6 +230,7 @@ async fn test_state() {
                     price: 10_000_000,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -262,6 +266,7 @@ async fn test_state() {
                 price: 10_000_000,
             },
         ],
+        revoke_expiry_time: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
     };
     assert_eq!(registrar, expected_registrar);
 
@@ -1119,6 +1124,7 @@ async fn test_state() {
                     price: 10_000_000,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1145,6 +1151,7 @@ async fn test_state() {
                 price: 10_000_000,
             },
         ],
+        revoke_expiry_time: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
     };
     let acc = prg_test_ctx
         .banks_client
@@ -1324,6 +1331,7 @@ async fn test_state() {
         registrar: registry_key,
         mint_record: Some(mint_record_key),
         sub_key: sub_domain_key,
+        expiry_timestamp: i64::MAX,
     };
     assert_eq!(sub_record, expected_sub_record);
 

@@ -126,6 +126,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
         registrar,
         sub_record,
         mr,
+        false,
         accounts.registrar,
         accounts.sub_domain_account,
         accounts.parent_domain,

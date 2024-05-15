@@ -6,6 +6,9 @@ use {
     solana_program::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey},
 };
 
+// After at least a week, a subdomain can be overwritten
+pub const REVOKE_EXPIRY_DELAY_SECONDS_MIN: i64 = 604800;
+
 // SubRecord are used to keep track of subs minted via a specific registrar
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Eq, BorshSize)]
 pub struct SubDomainRecord {
@@ -16,6 +19,9 @@ pub struct SubDomainRecord {
     pub sub_key: Pubkey,
     // If the record is associated to a NFT
     pub mint_record: Option<Pubkey>,
+    // Expiry timestamp. From this timestamp on the subdomain
+    // and subdomain record can be deleted
+    pub expiry_timestamp: i64,
 }
 
 impl SubDomainRecord {
@@ -27,6 +33,7 @@ impl SubDomainRecord {
             registrar,
             sub_key,
             mint_record: None,
+            expiry_timestamp: i64::MAX,
         }
     }
 

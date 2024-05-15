@@ -44,6 +44,10 @@ pub enum SubRegisterError {
     MissingMintRecord,
     #[error("Wrong mint record")]
     WrongMintRecord,
+    #[error("The revoked domain is still not expired to protect from impersonation")]
+    RevokedSubdomainNotExpired,
+    #[error("The proposed expiry delay for revoked subdomains is too low")]
+    RevokeExpiryDelayTooLow,
 }
 
 impl From<SubRegisterError> for ProgramError {
