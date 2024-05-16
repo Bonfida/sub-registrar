@@ -78,6 +78,11 @@ pub fn revoke_unchecked<'a>(
             .checked_add(registrar.revoke_expiry_time)
             .unwrap();
         sub_record.save(&mut sub_record_account.data.borrow_mut());
+        // Decrement nb sub created
+        registrar.total_sub_created = registrar
+            .total_sub_created
+            .checked_sub(1)
+            .ok_or(SubRegisterError::Overflow)?;
     }
 
     // Decrement mint record count
@@ -88,12 +93,6 @@ pub fn revoke_unchecked<'a>(
             .ok_or(SubRegisterError::Overflow)?;
         mint_record.save(&mut mint_record_account.unwrap().data.borrow_mut());
     }
-
-    // Decrement nb sub created
-    registrar.total_sub_created = registrar
-        .total_sub_created
-        .checked_sub(1)
-        .ok_or(SubRegisterError::Overflow)?;
 
     // Serialize state
     registrar.save(&mut registrar_account.data.borrow_mut());

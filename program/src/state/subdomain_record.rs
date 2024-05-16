@@ -52,8 +52,17 @@ impl SubDomainRecord {
         a: &AccountInfo,
         tag: super::Tag,
     ) -> Result<SubDomainRecord, ProgramError> {
+        Self::from_account_info_opt(a, Some(tag))
+    }
+
+    pub fn from_account_info_opt(
+        a: &AccountInfo,
+        tag: Option<super::Tag>,
+    ) -> Result<SubDomainRecord, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
-        if data[0] != tag as u8 && data[0] != super::Tag::Uninitialized as u8 {
+        if tag.map(|t| data[0] != t as u8).unwrap_or(true)
+            && data[0] != super::Tag::Uninitialized as u8
+        {
             return Err(SubRegisterError::DataTypeMismatch.into());
         }
         let result = SubDomainRecord::deserialize(&mut data)?;

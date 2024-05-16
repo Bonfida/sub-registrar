@@ -1,4 +1,6 @@
 //! Delete a subrecord account account
+use solana_program::{clock::Clock, sysvar::Sysvar};
+
 use crate::{
     error::SubRegisterError,
     state::{mint_record::MintRecord, registry::Registrar, subdomain_record::SubDomainRecord, Tag},
@@ -73,7 +75,16 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut sub_record = SubDomainRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
+    let mut sub_record = SubDomainRecord::from_account_info_opt(accounts.sub_record, None)?;
+    match sub_record.tag {
+        Tag::SubRecord => (),
+        Tag::RevokedSubRecord => {
+            if Clock::get()?.unix_timestamp < sub_record.expiry_timestamp {
+                return Err(SubRegisterError::RevokedSubdomainNotExpired.into());
+            }
+        }
+        _ => return Err(SubRegisterError::DataTypeMismatch.into()),
+    };
     let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
     // Check PDA derivation

@@ -416,7 +416,6 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             r
         }
         k if k == program_id => {
-            msg!("{k:?}",);
             let mut r =
                 SubDomainRecord::from_account_info(accounts.sub_record, Tag::RevokedSubRecord)?;
             let current_timestamp = Clock::get()?.unix_timestamp;
