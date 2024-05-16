@@ -60,7 +60,7 @@ impl SubDomainRecord {
         tag: Option<super::Tag>,
     ) -> Result<SubDomainRecord, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
-        if tag.map(|t| data[0] != t as u8).unwrap_or(true)
+        if tag.map(|t| data[0] != t as u8).unwrap_or(false)
             && data[0] != super::Tag::Uninitialized as u8
         {
             return Err(SubRegisterError::DataTypeMismatch.into());
