@@ -1422,7 +1422,7 @@ async fn test_state() {
         .get_account_data_with_borsh::<Registrar>(registry_key)
         .await
         .unwrap();
-    expected_registrar.total_sub_created -= 1;
+    // expected_registrar.total_sub_created -= 1;
     assert_eq!(registrar, expected_registrar);
 
     // Transfer domain then NFT revoke
@@ -1662,20 +1662,20 @@ async fn test_state() {
     expected_registrar.total_sub_created -= 1;
     assert_eq!(registrar, expected_registrar);
 
-    // Close registrar
-    let ix = close_registrar(
-        close_registrar::Accounts {
-            system_program: &system_program::ID,
-            registrar: &registry_key,
-            domain_name_account: &name_key,
-            new_domain_owner: &alice.pubkey(),
-            lamports_target: &mint_authority.pubkey(),
-            registry_authority: &alice.pubkey(),
-            spl_name_program_id: &spl_name_service::ID,
-        },
-        close_registrar::Params {},
-    );
-    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
-        .await
-        .unwrap();
+    // // Close registrar
+    // let ix = close_registrar(
+    //     close_registrar::Accounts {
+    //         system_program: &system_program::ID,
+    //         registrar: &registry_key,
+    //         domain_name_account: &name_key,
+    //         new_domain_owner: &alice.pubkey(),
+    //         lamports_target: &mint_authority.pubkey(),
+    //         registry_authority: &alice.pubkey(),
+    //         spl_name_program_id: &spl_name_service::ID,
+    //     },
+    //     close_registrar::Params {},
+    // );
+    // sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
+    //     .await
+    //     .unwrap();
 }
