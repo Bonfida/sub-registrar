@@ -1,10 +1,12 @@
 use std::str::FromStr;
 
+use async_trait::async_trait;
 use borsh::BorshSerialize;
+use solana_program::clock::Clock;
 use solana_program::instruction::Instruction;
 use solana_program::program_pack::Pack;
 use solana_program::pubkey::Pubkey;
-use solana_program_test::{BanksClientError, ProgramTest, ProgramTestContext};
+use solana_program_test::{BanksClientError, ProgramTest, ProgramTestContext, ProgramTestError};
 use solana_sdk::account::Account;
 use solana_sdk::signature::Signer;
 use solana_sdk::{signature::Keypair, transaction::Transaction};
@@ -77,4 +79,40 @@ pub fn serialize_price_schedule(price_schedule: &[Price]) -> Vec<u8> {
     let mut data: Vec<u8> = vec![];
     price_schedule.serialize(&mut data).unwrap();
     data
+}
+
+#[async_trait]
+pub trait ProgramTestContextExtended {
+    async fn warp_forward(&mut self, timestamp: i64) -> Result<(), ProgramTestError>;
+}
+
+#[async_trait]
+impl ProgramTestContextExtended for ProgramTestContext {
+    async fn warp_forward(&mut self, duration: i64) -> Result<(), ProgramTestError> {
+        // Adapted from https://github.com/halbornteam/solana-test-framework/blob/45e5e43aa1e321ead8ff6cd6e5d6b45e1921733d/src/extensions/program_test_context.rs#L31
+        const NANOSECONDS_IN_SECOND: i64 = 1_000_000_000;
+
+        let mut clock: Clock = self.banks_client.get_sysvar().await.unwrap();
+        let current_slot = clock.slot;
+        clock.unix_timestamp += duration;
+
+        if duration <= 0 {
+            println!("Timestamp incorrect. Cannot set time backwards.");
+            return Err(ProgramTestError::InvalidWarpSlot);
+        }
+
+        let ns_per_slot = self.genesis_config().ns_per_slot();
+        let timestamp_diff_ns = duration
+            .checked_mul(NANOSECONDS_IN_SECOND) //convert from s to ns
+            .expect("Problem with timestamp diff calculation.")
+            as u128;
+
+        let slots = timestamp_diff_ns
+            .checked_div(ns_per_slot)
+            .expect("Problem with slots from timestamp calculation.") as u64;
+
+        self.set_sysvar(&clock);
+        self.warp_to_slot(current_slot + slots)?;
+        Ok(())
+    }
 }
