@@ -91,7 +91,8 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
     let (sub_record_key, _) = SubDomainRecord::find_key(accounts.sub_domain.key, program_id);
     check_account_key(accounts.sub_record, &sub_record_key)?;
 
-    if let Some(mint_record) = sub_record.mint_record {
+    if sub_record.tag != Tag::RevokedSubRecord && sub_record.mint_record.is_some() {
+        let mint_record = sub_record.mint_record.unwrap();
         let mint_record_account = accounts
             .mint_record
             .ok_or(SubRegisterError::MissingAccount)?;
