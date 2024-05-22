@@ -77,6 +77,15 @@ pub fn revoke_unchecked<'a>(
 
         **target_lamports += **sub_record_lamports;
         **sub_record_lamports = 0;
+
+        // Decrement mint record count
+        if let Some(mut mint_record) = mint_record {
+            mint_record.count = mint_record
+                .count
+                .checked_sub(1)
+                .ok_or(SubRegisterError::Overflow)?;
+            mint_record.save(&mut mint_record_account.unwrap().data.borrow_mut());
+        }
     } else {
         sub_record.tag = Tag::RevokedSubRecord;
         sub_record.expiry_timestamp = Clock::get()?
@@ -84,15 +93,8 @@ pub fn revoke_unchecked<'a>(
             .checked_add(registrar.revoke_expiry_time)
             .unwrap();
         sub_record.save(&mut sub_record_account.data.borrow_mut());
-    }
 
-    // Decrement mint record count
-    if let Some(mut mint_record) = mint_record {
-        mint_record.count = mint_record
-            .count
-            .checked_sub(1)
-            .ok_or(SubRegisterError::Overflow)?;
-        mint_record.save(&mut mint_record_account.unwrap().data.borrow_mut());
+        // MintRecord count will be decremented in the `delete_subdomain_record` instruction
     }
 
     // Serialize state
