@@ -1,5 +1,6 @@
 //! Tests of state integrity
 
+use crate::common::utils::ProgramTestContextExtended;
 use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
@@ -16,7 +17,6 @@ use sub_register::{
     },
     utils::get_subdomain_key,
 };
-
 use {
     borsh::{BorshDeserialize, BorshSerialize},
     solana_program::{system_program, sysvar},
@@ -1422,7 +1422,35 @@ async fn test_state() {
         .get_account_data_with_borsh::<Registrar>(registry_key)
         .await
         .unwrap();
-    // expected_registrar.total_sub_created -= 1;
+    assert_eq!(registrar, expected_registrar);
+
+    prg_test_ctx
+        .warp_forward(REVOKE_EXPIRY_DELAY_SECONDS_MIN)
+        .await
+        .unwrap();
+    let ix = delete_subdomain_record(
+        delete_subdomain_record::Accounts {
+            sub_domain: &sub_domain_key,
+            lamports_target: &bob.pubkey(),
+            sub_record: &subrecord_key,
+            mint_record: Some(&mint_record_key),
+            registrar: &registry_key,
+        },
+        delete_subdomain_record::Params {},
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
+        .await
+        .unwrap();
+
+    // Verify state
+    let registrar = prg_test_ctx
+        .banks_client
+        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .await
+        .unwrap();
+
+    expected_registrar.total_sub_created -= 1;
+    assert_eq!(mint_record, expected_mint_record);
     assert_eq!(registrar, expected_registrar);
 
     // Transfer domain then NFT revoke
@@ -1663,19 +1691,19 @@ async fn test_state() {
     assert_eq!(registrar, expected_registrar);
 
     // // Close registrar
-    // let ix = close_registrar(
-    //     close_registrar::Accounts {
-    //         system_program: &system_program::ID,
-    //         registrar: &registry_key,
-    //         domain_name_account: &name_key,
-    //         new_domain_owner: &alice.pubkey(),
-    //         lamports_target: &mint_authority.pubkey(),
-    //         registry_authority: &alice.pubkey(),
-    //         spl_name_program_id: &spl_name_service::ID,
-    //     },
-    //     close_registrar::Params {},
-    // );
-    // sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
-    //     .await
-    //     .unwrap();
+    let ix = close_registrar(
+        close_registrar::Accounts {
+            system_program: &system_program::ID,
+            registrar: &registry_key,
+            domain_name_account: &name_key,
+            new_domain_owner: &alice.pubkey(),
+            lamports_target: &mint_authority.pubkey(),
+            registry_authority: &alice.pubkey(),
+            spl_name_program_id: &spl_name_service::ID,
+        },
+        close_registrar::Params {},
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
+        .await
+        .unwrap();
 }
