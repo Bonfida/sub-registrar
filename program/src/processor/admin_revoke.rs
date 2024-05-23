@@ -16,8 +16,10 @@ use {
         account_info::{next_account_info, AccountInfo},
         entrypoint::ProgramResult,
         program_error::ProgramError,
+        program_pack::Pack,
         pubkey::Pubkey,
     },
+    spl_name_service::state::NameRecordHeader,
 };
 
 #[derive(BorshDeserialize, BorshSerialize, BorshSize)]
@@ -104,6 +106,9 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
     check_account_key(accounts.authority, &registrar.authority)?;
     check_account_key(accounts.sub_record, &subrecord_key)?;
     check_account_key(accounts.parent_domain, &registrar.domain_account)?;
+
+    let header = NameRecordHeader::unpack_from_slice(&accounts.sub_domain_account.data.borrow())?;
+    check_account_key(accounts.sub_owner, &header.owner)?;
 
     if !registrar.allow_revoke {
         return Err(SubRegisterError::CannotRevoke.into());
