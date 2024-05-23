@@ -3,6 +3,7 @@ use crate::{
     cpi::Cpi,
     error::SubRegisterError,
     state::{registry::Registrar, subdomain_record::SubDomainRecord, Tag, ROOT_DOMAIN_ACCOUNT},
+    utils::get_subdomain_reverse,
 };
 use sns_registrar::processor::create_reverse;
 
@@ -142,6 +143,12 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     check_account_key(accounts.authority, &registrar.authority)?;
     check_account_key(accounts.parent_domain_account, &registrar.domain_account)?;
     check_account_key(accounts.sub_record, &subrecord_key)?;
+
+    let sub_key = get_subdomain_reverse(
+        params.domain.strip_prefix('\x00').unwrap(),
+        accounts.parent_domain_account.key,
+    );
+    check_account_key(accounts.sub_reverse_account, &sub_key)?;
 
     if !params.domain.starts_with('\0') {
         return Err(SubRegisterError::InvalidSubdomain.into());
