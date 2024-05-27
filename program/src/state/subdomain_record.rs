@@ -22,18 +22,22 @@ pub struct SubDomainRecord {
     // Expiry timestamp. From this timestamp on the subdomain
     // and subdomain record can be deleted
     pub expiry_timestamp: i64,
+    // Pubkey of the user who allocated the account
+    // Allows for refunds of allocation costs
+    pub allocator: Pubkey,
 }
 
 impl SubDomainRecord {
     pub const SEEDS: &'static [u8; 9] = b"subrecord";
 
-    pub fn new(registrar: Pubkey, sub_key: Pubkey) -> Self {
+    pub fn new(registrar: Pubkey, sub_key: Pubkey, allocator: Pubkey) -> Self {
         Self {
             tag: Tag::SubRecord,
             registrar,
             sub_key,
             mint_record: None,
             expiry_timestamp: i64::MAX,
+            allocator,
         }
     }
 

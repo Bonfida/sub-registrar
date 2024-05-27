@@ -90,6 +90,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
     // Check PDA derivation
     let (sub_record_key, _) = SubDomainRecord::find_key(accounts.sub_domain.key, program_id);
     check_account_key(accounts.sub_record, &sub_record_key)?;
+    check_account_key(accounts.lamports_target, &sub_record.allocator)?;
 
     if sub_record.tag != Tag::RevokedSubRecord && sub_record.mint_record.is_some() {
         let mint_record = sub_record.mint_record.unwrap();

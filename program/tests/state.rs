@@ -818,7 +818,7 @@ async fn test_state() {
     let subrecord: SubDomainRecord = SubDomainRecord::deserialize(&mut &acc.data[..]).unwrap();
     assert_eq!(
         subrecord,
-        SubDomainRecord::new(registry_key, sub_domain_key)
+        SubDomainRecord::new(registry_key, sub_domain_key, bob.pubkey())
     );
 
     // Verify fees received
@@ -889,7 +889,7 @@ async fn test_state() {
     let subrecord: SubDomainRecord = SubDomainRecord::deserialize(&mut &acc.data[..]).unwrap();
     assert_eq!(
         subrecord,
-        SubDomainRecord::new(registry_key, sub_domain_key)
+        SubDomainRecord::new(registry_key, sub_domain_key, bob.pubkey())
     );
 
     // Verify fees received
@@ -1025,7 +1025,7 @@ async fn test_state() {
     let subrecord: SubDomainRecord = SubDomainRecord::deserialize(&mut &acc.data[..]).unwrap();
     assert_eq!(
         subrecord,
-        SubDomainRecord::new(registry_key, sub_domain_key)
+        SubDomainRecord::new(registry_key, sub_domain_key, alice.pubkey())
     );
 
     // Unregister admin created sub
@@ -1332,6 +1332,7 @@ async fn test_state() {
         mint_record: Some(mint_record_key),
         sub_key: sub_domain_key,
         expiry_timestamp: i64::MAX,
+        allocator: bob.pubkey(),
     };
     assert_eq!(sub_record, expected_sub_record);
 
