@@ -1,4 +1,6 @@
 //! Delete a subrecord account account
+use solana_program::{clock::Clock, sysvar::Sysvar};
+
 use crate::{
     error::SubRegisterError,
     state::{mint_record::MintRecord, registry::Registrar, subdomain_record::SubDomainRecord, Tag},
@@ -73,14 +75,25 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
 
 pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -> ProgramResult {
     let accounts = Accounts::parse(accounts, program_id)?;
-    let mut sub_record = SubDomainRecord::from_account_info(accounts.sub_record, Tag::SubRecord)?;
+    let mut sub_record = SubDomainRecord::from_account_info_opt(accounts.sub_record, None)?;
+    match sub_record.tag {
+        Tag::SubRecord => (),
+        Tag::RevokedSubRecord => {
+            if Clock::get()?.unix_timestamp < sub_record.expiry_timestamp {
+                return Err(SubRegisterError::RevokedSubdomainNotExpired.into());
+            }
+        }
+        _ => return Err(SubRegisterError::DataTypeMismatch.into()),
+    };
     let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
 
     // Check PDA derivation
     let (sub_record_key, _) = SubDomainRecord::find_key(accounts.sub_domain.key, program_id);
     check_account_key(accounts.sub_record, &sub_record_key)?;
+    check_account_key(accounts.lamports_target, &sub_record.allocator)?;
 
-    if let Some(mint_record) = sub_record.mint_record {
+    if sub_record.tag != Tag::RevokedSubRecord && sub_record.mint_record.is_some() {
+        let mint_record = sub_record.mint_record.unwrap();
         let mint_record_account = accounts
             .mint_record
             .ok_or(SubRegisterError::MissingAccount)?;

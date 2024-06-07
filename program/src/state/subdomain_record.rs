@@ -6,6 +6,9 @@ use {
     solana_program::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey},
 };
 
+// After at least a week, a subdomain can be overwritten
+pub const REVOKE_EXPIRY_DELAY_SECONDS_MIN: i64 = 604800;
+
 // SubRecord are used to keep track of subs minted via a specific registrar
 #[derive(BorshSerialize, BorshDeserialize, PartialEq, Debug, Eq, BorshSize)]
 pub struct SubDomainRecord {
@@ -16,17 +19,25 @@ pub struct SubDomainRecord {
     pub sub_key: Pubkey,
     // If the record is associated to a NFT
     pub mint_record: Option<Pubkey>,
+    // Expiry timestamp. From this timestamp on the subdomain
+    // and subdomain record can be deleted
+    pub expiry_timestamp: i64,
+    // Pubkey of the user who allocated the account
+    // Allows for refunds of allocation costs
+    pub allocator: Pubkey,
 }
 
 impl SubDomainRecord {
     pub const SEEDS: &'static [u8; 9] = b"subrecord";
 
-    pub fn new(registrar: Pubkey, sub_key: Pubkey) -> Self {
+    pub fn new(registrar: Pubkey, sub_key: Pubkey, allocator: Pubkey) -> Self {
         Self {
             tag: Tag::SubRecord,
             registrar,
             sub_key,
             mint_record: None,
+            expiry_timestamp: i64::MAX,
+            allocator,
         }
     }
 
@@ -45,8 +56,17 @@ impl SubDomainRecord {
         a: &AccountInfo,
         tag: super::Tag,
     ) -> Result<SubDomainRecord, ProgramError> {
+        Self::from_account_info_opt(a, Some(tag))
+    }
+
+    pub fn from_account_info_opt(
+        a: &AccountInfo,
+        tag: Option<super::Tag>,
+    ) -> Result<SubDomainRecord, ProgramError> {
         let mut data = &a.data.borrow() as &[u8];
-        if data[0] != tag as u8 && data[0] != super::Tag::Uninitialized as u8 {
+        if tag.map(|t| data[0] != t as u8).unwrap_or(false)
+            && data[0] != super::Tag::Uninitialized as u8
+        {
             return Err(SubRegisterError::DataTypeMismatch.into());
         }
         let result = SubDomainRecord::deserialize(&mut data)?;

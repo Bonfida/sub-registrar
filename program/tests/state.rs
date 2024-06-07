@@ -1,5 +1,6 @@
 //! Tests of state integrity
 
+use crate::common::utils::ProgramTestContextExtended;
 use solana_program::program_pack::Pack;
 use sub_register::{
     entrypoint::process_instruction,
@@ -8,12 +9,14 @@ use sub_register::{
         edit_registrar, nft_owner_revoke, register, unregister,
     },
     state::{
-        mint_record::MintRecord, registry::Registrar, schedule::Price,
-        subdomain_record::SubDomainRecord, Tag, FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
+        mint_record::MintRecord,
+        registry::Registrar,
+        schedule::Price,
+        subdomain_record::{SubDomainRecord, REVOKE_EXPIRY_DELAY_SECONDS_MIN},
+        Tag, FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
     },
     utils::get_subdomain_key,
 };
-
 use {
     borsh::{BorshDeserialize, BorshSerialize},
     solana_program::{system_program, sysvar},
@@ -227,6 +230,7 @@ async fn test_state() {
                     price: 10_000_000,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -262,6 +266,7 @@ async fn test_state() {
                 price: 10_000_000,
             },
         ],
+        revoke_expiry_time: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
     };
     assert_eq!(registrar, expected_registrar);
 
@@ -813,7 +818,7 @@ async fn test_state() {
     let subrecord: SubDomainRecord = SubDomainRecord::deserialize(&mut &acc.data[..]).unwrap();
     assert_eq!(
         subrecord,
-        SubDomainRecord::new(registry_key, sub_domain_key)
+        SubDomainRecord::new(registry_key, sub_domain_key, bob.pubkey())
     );
 
     // Verify fees received
@@ -884,7 +889,7 @@ async fn test_state() {
     let subrecord: SubDomainRecord = SubDomainRecord::deserialize(&mut &acc.data[..]).unwrap();
     assert_eq!(
         subrecord,
-        SubDomainRecord::new(registry_key, sub_domain_key)
+        SubDomainRecord::new(registry_key, sub_domain_key, bob.pubkey())
     );
 
     // Verify fees received
@@ -1020,7 +1025,7 @@ async fn test_state() {
     let subrecord: SubDomainRecord = SubDomainRecord::deserialize(&mut &acc.data[..]).unwrap();
     assert_eq!(
         subrecord,
-        SubDomainRecord::new(registry_key, sub_domain_key)
+        SubDomainRecord::new(registry_key, sub_domain_key, alice.pubkey())
     );
 
     // Unregister admin created sub
@@ -1119,6 +1124,7 @@ async fn test_state() {
                     price: 10_000_000,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1145,6 +1151,7 @@ async fn test_state() {
                 price: 10_000_000,
             },
         ],
+        revoke_expiry_time: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
     };
     let acc = prg_test_ctx
         .banks_client
@@ -1324,6 +1331,8 @@ async fn test_state() {
         registrar: registry_key,
         mint_record: Some(mint_record_key),
         sub_key: sub_domain_key,
+        expiry_timestamp: i64::MAX,
+        allocator: bob.pubkey(),
     };
     assert_eq!(sub_record, expected_sub_record);
 
@@ -1414,7 +1423,35 @@ async fn test_state() {
         .get_account_data_with_borsh::<Registrar>(registry_key)
         .await
         .unwrap();
+    assert_eq!(registrar, expected_registrar);
+
+    prg_test_ctx
+        .warp_forward(REVOKE_EXPIRY_DELAY_SECONDS_MIN)
+        .await
+        .unwrap();
+    let ix = delete_subdomain_record(
+        delete_subdomain_record::Accounts {
+            sub_domain: &sub_domain_key,
+            lamports_target: &bob.pubkey(),
+            sub_record: &subrecord_key,
+            mint_record: Some(&mint_record_key),
+            registrar: &registry_key,
+        },
+        delete_subdomain_record::Params {},
+    );
+    sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![])
+        .await
+        .unwrap();
+
+    // Verify state
+    let registrar = prg_test_ctx
+        .banks_client
+        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .await
+        .unwrap();
+
     expected_registrar.total_sub_created -= 1;
+    assert_eq!(mint_record, expected_mint_record);
     assert_eq!(registrar, expected_registrar);
 
     // Transfer domain then NFT revoke
@@ -1654,7 +1691,7 @@ async fn test_state() {
     expected_registrar.total_sub_created -= 1;
     assert_eq!(registrar, expected_registrar);
 
-    // Close registrar
+    // // Close registrar
     let ix = close_registrar(
         close_registrar::Accounts {
             system_program: &system_program::ID,

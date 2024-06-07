@@ -73,6 +73,12 @@ impl PrintProgramError for SubRegisterError {
             SubRegisterError::WrongMintRecord => {
                 msg!("[+] Error: Wrong mint record")
             }
+            SubRegisterError::RevokedSubdomainNotExpired => {
+                msg!("[+] Error: The revoked domain is still not expired to protect from impersonation")
+            }
+            SubRegisterError::RevokeExpiryDelayTooLow => {
+                msg!("[+] Error: The proposed expiry delay for revoked subdomains is too low")
+            }
             SubRegisterError::WrongMint => {
                 msg!("[+] Error: Wrong mint")
             }

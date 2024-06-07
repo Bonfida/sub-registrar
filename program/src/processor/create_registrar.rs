@@ -3,7 +3,10 @@
 use crate::{
     cpi::Cpi,
     error::SubRegisterError,
-    state::{registry::Registrar, schedule::Price, ROOT_DOMAIN_ACCOUNT},
+    state::{
+        registry::Registrar, schedule::Price, subdomain_record::REVOKE_EXPIRY_DELAY_SECONDS_MIN,
+        ROOT_DOMAIN_ACCOUNT,
+    },
     utils::is_price_schedule_sorted,
 };
 
@@ -35,6 +38,7 @@ pub struct Params {
     pub nft_gated_collection: Option<Pubkey>,
     pub max_nft_mint: u8,
     pub allow_revoke: bool,
+    pub revoke_expiry_delay: i64,
 }
 
 #[derive(InstructionsAccount)]
@@ -115,6 +119,10 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         return Err(ProgramError::InvalidArgument);
     }
 
+    if params.revoke_expiry_delay < REVOKE_EXPIRY_DELAY_SECONDS_MIN {
+        return Err(SubRegisterError::RevokeExpiryDelayTooLow.into());
+    }
+
     // Create Registry account
     let seeds: &[&[u8]] = &[
         Registrar::SEEDS,
@@ -131,6 +139,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         params.nft_gated_collection,
         params.max_nft_mint,
         params.allow_revoke,
+        params.revoke_expiry_delay,
     );
     Cpi::create_account(
         program_id,

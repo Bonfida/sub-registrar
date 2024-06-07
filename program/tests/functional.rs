@@ -6,8 +6,11 @@ use sub_register::{
         edit_registrar, nft_owner_revoke, register, unregister,
     },
     state::{
-        mint_record::MintRecord, registry::Registrar, schedule::Price,
-        subdomain_record::SubDomainRecord, FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
+        mint_record::MintRecord,
+        registry::Registrar,
+        schedule::Price,
+        subdomain_record::{SubDomainRecord, REVOKE_EXPIRY_DELAY_SECONDS_MIN},
+        FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
     },
 };
 use {
@@ -223,6 +226,7 @@ async fn test_functional() {
                     price: 10_000_000,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -497,6 +501,7 @@ async fn test_functional() {
                     price: 10_000_000,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])

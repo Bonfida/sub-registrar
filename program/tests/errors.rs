@@ -7,8 +7,11 @@ use sub_register::{
         edit_registrar, nft_owner_revoke, register, unregister,
     },
     state::{
-        mint_record::MintRecord, registry::Registrar, schedule::Price,
-        subdomain_record::SubDomainRecord, FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
+        mint_record::MintRecord,
+        registry::Registrar,
+        schedule::Price,
+        subdomain_record::{SubDomainRecord, REVOKE_EXPIRY_DELAY_SECONDS_MIN},
+        FEE_ACC_OWNER, ROOT_DOMAIN_ACCOUNT,
     },
 };
 use {
@@ -273,7 +276,7 @@ async fn test_errors() {
             authority: alice.pubkey(),
             allow_revoke: false,
             max_nft_mint: 0,
-            price_schedule: common::utils::serialize_price_schedule(&vec![
+            price_schedule: common::utils::serialize_price_schedule(&[
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -296,6 +299,7 @@ async fn test_errors() {
                 },
             ]),
             nft_gated_collection: None,
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -385,7 +389,7 @@ async fn test_errors() {
             nft_gated_collection: None,
             max_nft_mint: 0,
             allow_revoke: false,
-            price_schedule: common::utils::serialize_price_schedule(&vec![
+            price_schedule: common::utils::serialize_price_schedule(&[
                 Price {
                     length: 1,
                     price: 10_000_000_001,
@@ -395,6 +399,7 @@ async fn test_errors() {
                     price: 10_000_000_001,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     let result = sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice]).await;
@@ -413,7 +418,7 @@ async fn test_errors() {
             new_mint: None,
             new_fee_account: None,
             new_max_nft_mint: None,
-            new_price_schedule: Some(common::utils::serialize_price_schedule(&vec![
+            new_price_schedule: Some(common::utils::serialize_price_schedule(&[
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -784,7 +789,7 @@ async fn test_errors() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: common::utils::serialize_price_schedule(&vec![
+            price_schedule: common::utils::serialize_price_schedule(&[
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -794,6 +799,7 @@ async fn test_errors() {
                     price: 10_000_000,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -930,7 +936,7 @@ async fn test_errors() {
                     mint,
                     fee_account: *alice_fee_account,
                     authority: alice.pubkey(),
-                    price_schedule: common::utils::serialize_price_schedule(&vec![
+                    price_schedule: common::utils::serialize_price_schedule(&[
                         Price {
                             length: 1,
                             price: 10_000_000,
@@ -940,6 +946,7 @@ async fn test_errors() {
                             price: 10_000_000,
                         },
                     ]),
+                    revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
                 },
             ),
             register(
@@ -1105,7 +1112,7 @@ async fn test_errors() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: common::utils::serialize_price_schedule(&vec![
+            price_schedule: common::utils::serialize_price_schedule(&[
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -1115,6 +1122,7 @@ async fn test_errors() {
                     price: 10_000_000,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1224,7 +1232,7 @@ async fn test_errors() {
             mint,
             fee_account: *alice_fee_account,
             authority: alice.pubkey(),
-            price_schedule: common::utils::serialize_price_schedule(&vec![
+            price_schedule: common::utils::serialize_price_schedule(&[
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -1234,6 +1242,7 @@ async fn test_errors() {
                     price: 10_000_000,
                 },
             ]),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
@@ -1479,7 +1488,7 @@ async fn test_errors_nft() {
             authority: alice.pubkey(),
             allow_revoke: true,
             max_nft_mint: 4,
-            price_schedule: common::utils::serialize_price_schedule(&vec![
+            price_schedule: common::utils::serialize_price_schedule(&[
                 Price {
                     length: 1,
                     price: 10_000_000,
@@ -1502,6 +1511,7 @@ async fn test_errors_nft() {
                 },
             ]),
             nft_gated_collection: Some(common::metadata::COLLECTION_KEY),
+            revoke_expiry_delay: REVOKE_EXPIRY_DELAY_SECONDS_MIN,
         },
     );
     sign_send_instructions(&mut prg_test_ctx, vec![ix], vec![&alice])
