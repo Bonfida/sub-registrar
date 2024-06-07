@@ -9,6 +9,8 @@ export class SubRecord {
   registrar: PublicKey;
   subKey: PublicKey;
   mintRecord: PublicKey | undefined;
+  expiryTimestamp: bigint;
+  allocator: PublicKey;
 
   static schema = {
     struct: {
@@ -16,6 +18,8 @@ export class SubRecord {
       registrar: { array: { type: "u8", len: 32 } },
       subKey: { array: { type: "u8", len: 32 } },
       mintRecord: { option: { array: { type: "u8", len: 32 } } },
+      expiryTimestamp: "u64",
+      allocator: { array: { type: "u8", len: 32 } },
     },
   };
 
@@ -24,6 +28,8 @@ export class SubRecord {
     registrar: Uint8Array;
     subKey: Uint8Array;
     mintRecord: Uint8Array | null;
+    expiryTimestamp: bigint;
+    allocator: Uint8Array;
   }) {
     this.tag = obj.tag as Tag;
     this.registrar = new PublicKey(obj.registrar);
@@ -31,6 +37,8 @@ export class SubRecord {
     this.mintRecord = obj.mintRecord
       ? new PublicKey(obj.mintRecord)
       : undefined;
+    this.expiryTimestamp = obj.expiryTimestamp;
+    this.allocator = new PublicKey(obj.allocator);
   }
 
   static deserialize(data: Buffer): SubRecord {
