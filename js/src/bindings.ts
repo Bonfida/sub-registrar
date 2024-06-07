@@ -263,7 +263,7 @@ export const deleteSubrecord = async (
   lamportsTarget: PublicKey
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
-  const [subRecord] = SubRecord.findKey(obj.domain, SUB_REGISTER_ID);
+  const [subRecord] = SubRecord.findKey(subDomain, SUB_REGISTER_ID);
 
   let mintRecord: PublicKey | undefined = undefined;
   if (obj.nftGatedCollection) {
@@ -430,7 +430,7 @@ export const adminRevoke = async (
   const obj = await Registrar.retrieve(connection, registrar);
   const parent = await reverseLookup(connection, obj.domain);
   const { pubkey } = getDomainKeySync(subDomain + "." + parent);
-  const [subRecord] = SubRecord.findKey(obj.domain, SUB_REGISTER_ID);
+  const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
 
   let mintRecord: PublicKey | undefined = undefined;
   if (obj.nftGatedCollection) {
