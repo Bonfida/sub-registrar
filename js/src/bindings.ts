@@ -88,6 +88,7 @@ export const createRegistrar = async (
     maxNftMint: maxNftMint || 0,
     allowRevoke,
     priceSchedule: Array.from(serializePriceSchedule(schedule)),
+    revokeExpiryDelay: BigInt(604800),
   }).getInstruction(
     SUB_REGISTER_ID,
     SystemProgram.programId,

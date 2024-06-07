@@ -116,7 +116,7 @@ export class adminRevokeInstruction {
     keys.push({
       pubkey: subOwner,
       isSigner: false,
-      isWritable: false,
+      isWritable: true,
     });
     keys.push({
       pubkey: parentDomain,
@@ -376,6 +376,7 @@ export class createRegistrarInstruction {
   nftGatedCollection: Uint8Array | null;
   maxNftMint: number;
   allowRevoke: boolean;
+  revokeExpiryDelay: bigint;
   static schema = {
     struct: {
       tag: "u8",
@@ -386,6 +387,7 @@ export class createRegistrarInstruction {
       nftGatedCollection: { option: { array: { type: "u8", len: 32 } } },
       maxNftMint: "u8",
       allowRevoke: "bool",
+      revokeExpiryDelay: "i64",
     },
   };
   constructor(obj: {
@@ -396,6 +398,7 @@ export class createRegistrarInstruction {
     nftGatedCollection: Uint8Array | null;
     maxNftMint: number;
     allowRevoke: boolean;
+    revokeExpiryDelay: bigint;
   }) {
     this.tag = 0;
     this.mint = obj.mint;
@@ -405,6 +408,7 @@ export class createRegistrarInstruction {
     this.nftGatedCollection = obj.nftGatedCollection;
     this.maxNftMint = obj.maxNftMint;
     this.allowRevoke = obj.allowRevoke;
+    this.revokeExpiryDelay = obj.revokeExpiryDelay;
   }
   serialize(): Uint8Array {
     return serialize(createRegistrarInstruction.schema, this);
