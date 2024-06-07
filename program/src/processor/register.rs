@@ -395,7 +395,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Create subrecord account
-    let mut sub_record = match accounts.sub_record.owner {
+    let sub_record = match accounts.sub_record.owner {
         &system_program::ID => {
             let mut r = SubDomainRecord::new(
                 *accounts.registrar.key,
