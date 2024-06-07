@@ -2,6 +2,7 @@
 
 use mpl_token_metadata::accounts::Metadata;
 use sns_registrar::processor::create_reverse;
+use solana_program::clock::Clock;
 
 use crate::{
     cpi::Cpi,
@@ -158,7 +159,7 @@ impl<'a, 'b: 'a> Accounts<'a, AccountInfo<'b>> {
             check_account_owner(accounts.sub_reverse_account, &spl_name_service::ID)
         })?;
         check_account_owner(accounts.bonfida_fee_account, &spl_token::ID)?;
-        check_account_owner(accounts.sub_record, &system_program::ID)?;
+        // check_account_owner(accounts.sub_record, &system_program::ID)?;
 
         // Check signer
         check_signer(accounts.fee_payer)?;
@@ -176,6 +177,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     check_account_key(accounts.fee_account, &registrar.fee_account)?;
     check_account_key(accounts.parent_domain_account, &registrar.domain_account)?;
     check_account_key(accounts.sub_record, &subrecord_key)?;
+
     check_token_account_owner(accounts.bonfida_fee_account, &FEE_ACC_OWNER)?;
 
     if !params.domain.starts_with('\x00') {
@@ -393,22 +395,44 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
     }
 
     // Create subrecord account
-    let mut sub_record =
-        SubDomainRecord::new(*accounts.registrar.key, *accounts.sub_domain_account.key);
-    sub_record.mint_record = mint_record_key;
-    let seeds: &[&[u8]] = &[
-        SubDomainRecord::SEEDS,
-        &accounts.sub_domain_account.key.to_bytes(),
-        &[subrecord_nonce],
-    ];
-    Cpi::create_account(
-        program_id,
-        accounts.system_program,
-        accounts.fee_payer,
-        accounts.sub_record,
-        seeds,
-        sub_record.borsh_len(),
-    )?;
+    let sub_record = match accounts.sub_record.owner {
+        &system_program::ID => {
+            let mut r = SubDomainRecord::new(
+                *accounts.registrar.key,
+                *accounts.sub_domain_account.key,
+                *accounts.fee_payer.key,
+            );
+            let seeds: &[&[u8]] = &[
+                SubDomainRecord::SEEDS,
+                &accounts.sub_domain_account.key.to_bytes(),
+                &[subrecord_nonce],
+            ];
+            r.mint_record = mint_record_key;
+            Cpi::create_account(
+                program_id,
+                accounts.system_program,
+                accounts.fee_payer,
+                accounts.sub_record,
+                seeds,
+                r.borsh_len(),
+            )?;
+            r
+        }
+        k if k == program_id => {
+            let mut r =
+                SubDomainRecord::from_account_info(accounts.sub_record, Tag::RevokedSubRecord)?;
+            let current_timestamp = Clock::get()?.unix_timestamp;
+            if current_timestamp < r.expiry_timestamp {
+                return Err(SubRegisterError::RevokedSubdomainNotExpired.into());
+            }
+            r.tag = Tag::SubRecord;
+            r.expiry_timestamp = i64::MAX;
+            r.mint_record = mint_record_key;
+            r
+        }
+        _ => return Err(ProgramError::InvalidArgument),
+    };
+
     sub_record.save(&mut accounts.sub_record.data.borrow_mut());
 
     // Increment nb sub created

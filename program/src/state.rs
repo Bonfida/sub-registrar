@@ -25,6 +25,7 @@ pub enum Tag {
     SubRecord,
     ClosedSubRecord,
     MintRecord,
+    RevokedSubRecord,
 }
 
 impl Default for Tag {

@@ -7,7 +7,8 @@ use crate::{
 };
 
 use solana_program::{
-    account_info::AccountInfo, entrypoint::ProgramResult, program::invoke_signed,
+    account_info::AccountInfo, clock::Clock, entrypoint::ProgramResult, program::invoke_signed,
+    sysvar::Sysvar,
 };
 
 // All accounts checks must be done before calling this function!
@@ -16,6 +17,7 @@ pub fn revoke_unchecked<'a>(
     mut registrar: Registrar,
     mut sub_record: SubDomainRecord,
     mint_record: Option<MintRecord>,
+    user_approved: bool,
     registrar_account: &AccountInfo<'a>,
     subdomain_account: &AccountInfo<'a>,
     parent_domain_account: &AccountInfo<'a>,
@@ -58,16 +60,31 @@ pub fn revoke_unchecked<'a>(
         &[seeds],
     )?;
 
-    // Close subrecord account
-    sub_record.tag = Tag::ClosedSubRecord;
-    sub_record.save(&mut sub_record_account.data.borrow_mut());
+    if user_approved {
+        // Close subrecord account
+        sub_record.tag = Tag::ClosedSubRecord;
+        sub_record.save(&mut sub_record_account.data.borrow_mut());
 
-    // Zero out lamports of subrecord account
-    let mut sub_record_lamports = sub_record_account.lamports.borrow_mut();
-    let mut target_lamports = lamport_target_account.lamports.borrow_mut();
+        // Zero out lamports of subrecord account
+        let mut sub_record_lamports = sub_record_account.lamports.borrow_mut();
+        let mut target_lamports = lamport_target_account.lamports.borrow_mut();
 
-    **target_lamports += **sub_record_lamports;
-    **sub_record_lamports = 0;
+        // Decrement nb sub created
+        registrar.total_sub_created = registrar
+            .total_sub_created
+            .checked_sub(1)
+            .ok_or(SubRegisterError::Overflow)?;
+
+        **target_lamports += **sub_record_lamports;
+        **sub_record_lamports = 0;
+    } else {
+        sub_record.tag = Tag::RevokedSubRecord;
+        sub_record.expiry_timestamp = Clock::get()?
+            .unix_timestamp
+            .checked_add(registrar.revoke_expiry_time)
+            .unwrap();
+        sub_record.save(&mut sub_record_account.data.borrow_mut());
+    }
 
     // Decrement mint record count
     if let Some(mut mint_record) = mint_record {
@@ -77,12 +94,6 @@ pub fn revoke_unchecked<'a>(
             .ok_or(SubRegisterError::Overflow)?;
         mint_record.save(&mut mint_record_account.unwrap().data.borrow_mut());
     }
-
-    // Decrement nb sub created
-    registrar.total_sub_created = registrar
-        .total_sub_created
-        .checked_sub(1)
-        .ok_or(SubRegisterError::Overflow)?;
 
     // Serialize state
     registrar.save(&mut registrar_account.data.borrow_mut());
