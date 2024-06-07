@@ -79,6 +79,9 @@ impl PrintProgramError for SubRegisterError {
             SubRegisterError::RevokeExpiryDelayTooLow => {
                 msg!("[+] Error: The proposed expiry delay for revoked subdomains is too low")
             }
+            SubRegisterError::WrongMint => {
+                msg!("[+] Error: Wrong mint")
+            }
         }
     }
 }
