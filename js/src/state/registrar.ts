@@ -125,6 +125,21 @@ export class Registrar {
       programId
     );
   }
+
+  static async findAll(connection: Connection) {
+    const filters: MemcmpFilter[] = [
+      { memcmp: { offset: 0, bytes: (Tag.Registrar + 1).toString() } },
+    ];
+    const accounts = await connection.getProgramAccounts(SUB_REGISTER_ID, {
+      filters,
+    });
+    return accounts.map((e) => {
+      return {
+        pubkey: e.pubkey,
+        registrar: Registrar.deserialize(e.account.data),
+      };
+    });
+  }
 }
 
 export const formatSchedule = (schedule: Schedule[]): bigint[][] => {
