@@ -33,3 +33,18 @@ impl Default for Tag {
         Self::Uninitialized
     }
 }
+
+impl Tag {
+    pub fn from_u8(value: u8) -> Option<Self> {
+        match value {
+            0 => Some(Self::Uninitialized),
+            1 => Some(Self::Registrar),
+            2 => Some(Self::ClosedRegistrar),
+            3 => Some(Self::SubRecord),
+            4 => Some(Self::ClosedSubRecord),
+            5 => Some(Self::MintRecord),
+            6 => Some(Self::RevokedSubRecord),
+            _ => None,
+        }
+    }
+}
