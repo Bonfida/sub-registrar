@@ -33,6 +33,7 @@ use {
         program_pack::Pack,
         pubkey::Pubkey,
         rent::Rent,
+        system_instruction::transfer,
         system_program, sysvar,
         sysvar::Sysvar,
     },
@@ -394,9 +395,17 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
         )?;
     }
 
+    let current_tag = accounts
+        .sub_record
+        .data
+        .borrow()
+        .first()
+        .and_then(|x| Tag::from_u8(*x))
+        .unwrap_or(Tag::Uninitialized);
+
     // Create subrecord account
-    let sub_record = match accounts.sub_record.owner {
-        &system_program::ID => {
+    let sub_record = match (accounts.sub_record.owner, current_tag) {
+        (&system_program::ID, _) => {
             let mut r = SubDomainRecord::new(
                 *accounts.registrar.key,
                 *accounts.sub_domain_account.key,
@@ -418,7 +427,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             )?;
             r
         }
-        k if k == program_id => {
+        (k, Tag::RevokedSubRecord) if k == program_id => {
             let mut r =
                 SubDomainRecord::from_account_info(accounts.sub_record, Tag::RevokedSubRecord)?;
             let current_timestamp = Clock::get()?.unix_timestamp;
@@ -428,6 +437,35 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], params: Params) ->
             r.tag = Tag::SubRecord;
             r.expiry_timestamp = i64::MAX;
             r.mint_record = mint_record_key;
+            r
+        }
+        (k, Tag::ClosedSubRecord) if k == program_id => {
+            let mut r = SubDomainRecord::new(
+                *accounts.registrar.key,
+                *accounts.sub_domain_account.key,
+                *accounts.fee_payer.key,
+            );
+            r.mint_record = mint_record_key;
+
+            let current_lamports = **accounts.sub_record.lamports.borrow();
+            let rent = Rent::get()?.minimum_balance(r.borsh_len());
+
+            if current_lamports < rent {
+                let ix = transfer(
+                    accounts.fee_payer.key,
+                    accounts.sub_record.key,
+                    rent - current_lamports,
+                );
+                invoke(
+                    &ix,
+                    &[
+                        accounts.system_program.clone(),
+                        accounts.fee_payer.clone(),
+                        accounts.sub_record.clone(),
+                    ],
+                )?;
+            }
+
             r
         }
         _ => return Err(ProgramError::InvalidArgument),

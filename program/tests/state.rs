@@ -1310,22 +1310,27 @@ async fn test_state() {
         .await
         .unwrap();
     // Verify state
-    let mint_record = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<MintRecord>(mint_record_key)
+        .get_account(mint_record_key)
         .await
+        .unwrap()
         .unwrap();
+    let mint_record = MintRecord::deserialize(&mut &account.data[..]).unwrap();
     let mut expected_mint_record = MintRecord {
         tag: Tag::MintRecord,
         count: 1,
         mint: common::metadata::NFT_MINT,
     };
     assert_eq!(mint_record, expected_mint_record);
-    let sub_record = prg_test_ctx
+
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<SubDomainRecord>(subrecord_key)
+        .get_account(subrecord_key)
         .await
+        .unwrap()
         .unwrap();
+    let sub_record = SubDomainRecord::deserialize(&mut &account.data[..]).unwrap();
     let expected_sub_record = SubDomainRecord {
         tag: Tag::SubRecord,
         registrar: registry_key,
@@ -1377,18 +1382,22 @@ async fn test_state() {
         .await
         .unwrap();
     // Verify state
-    let mint_record = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<MintRecord>(mint_record_key)
+        .get_account(mint_record_key)
         .await
+        .unwrap()
         .unwrap();
+    let mint_record = MintRecord::deserialize(&mut &account.data[..]).unwrap();
     expected_mint_record.count += 1;
     assert_eq!(mint_record, expected_mint_record);
-    let registrar = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .get_account(registry_key)
         .await
+        .unwrap()
         .unwrap();
+    let registrar = Registrar::deserialize(&mut &account.data[..]).unwrap();
     expected_registrar.total_sub_created = 2;
     assert_eq!(registrar, expected_registrar);
 
@@ -1411,18 +1420,22 @@ async fn test_state() {
         .await
         .unwrap();
     // Verify state
-    let mint_record = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<MintRecord>(mint_record_key)
+        .get_account(mint_record_key)
         .await
+        .unwrap()
         .unwrap();
+    let mint_record = MintRecord::deserialize(&mut &account.data[..]).unwrap();
     expected_mint_record.count -= 1;
     assert_eq!(mint_record, expected_mint_record);
-    let registrar = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .get_account(registry_key)
         .await
+        .unwrap()
         .unwrap();
+    let registrar = Registrar::deserialize(&mut &account.data[..]).unwrap();
     assert_eq!(registrar, expected_registrar);
 
     prg_test_ctx
@@ -1444,11 +1457,13 @@ async fn test_state() {
         .unwrap();
 
     // Verify state
-    let registrar = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .get_account(registry_key)
         .await
+        .unwrap()
         .unwrap();
+    let registrar = Registrar::deserialize(&mut &account.data[..]).unwrap();
 
     expected_registrar.total_sub_created -= 1;
     assert_eq!(mint_record, expected_mint_record);
@@ -1486,18 +1501,23 @@ async fn test_state() {
         .await
         .unwrap();
     // Verify state
-    let mint_record = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<MintRecord>(mint_record_key)
+        .get_account(mint_record_key)
         .await
+        .unwrap()
         .unwrap();
+    let mint_record = MintRecord::deserialize(&mut &account.data[..]).unwrap();
+
     expected_mint_record.count -= 1;
     assert_eq!(mint_record, expected_mint_record);
-    let registrar = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .get_account(registry_key)
         .await
+        .unwrap()
         .unwrap();
+    let registrar = Registrar::deserialize(&mut &account.data[..]).unwrap();
     expected_registrar.total_sub_created -= 1;
     assert_eq!(registrar, expected_registrar);
 
@@ -1548,18 +1568,22 @@ async fn test_state() {
         .await
         .unwrap();
     // Verify state
-    let mint_record = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<MintRecord>(mint_record_key)
+        .get_account(mint_record_key)
         .await
+        .unwrap()
         .unwrap();
+    let mint_record = MintRecord::deserialize(&mut &account.data[..]).unwrap();
     expected_mint_record.count += 1;
     assert_eq!(mint_record, expected_mint_record);
-    let registrar = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .get_account(registry_key)
         .await
+        .unwrap()
         .unwrap();
+    let registrar = Registrar::deserialize(&mut &account.data[..]).unwrap();
     expected_registrar.total_sub_created += 1;
     assert_eq!(registrar, expected_registrar);
 
@@ -1580,18 +1604,22 @@ async fn test_state() {
         .await
         .unwrap();
     // Verify state
-    let mint_record = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<MintRecord>(mint_record_key)
+        .get_account(mint_record_key)
         .await
+        .unwrap()
         .unwrap();
+    let mint_record = MintRecord::deserialize(&mut &account.data[..]).unwrap();
     expected_mint_record.count -= 1;
     assert_eq!(mint_record, expected_mint_record);
-    let registrar = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .get_account(registry_key)
         .await
+        .unwrap()
         .unwrap();
+    let registrar = Registrar::deserialize(&mut &account.data[..]).unwrap();
     expected_registrar.total_sub_created -= 1;
     assert_eq!(registrar, expected_registrar);
 
@@ -1636,18 +1664,22 @@ async fn test_state() {
         .await
         .unwrap();
     // Verify state
-    let mint_record = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<MintRecord>(mint_record_key)
+        .get_account(mint_record_key)
         .await
+        .unwrap()
         .unwrap();
+    let mint_record = MintRecord::deserialize(&mut &account.data[..]).unwrap();
     expected_mint_record.count += 1;
     assert_eq!(mint_record, expected_mint_record);
-    let registrar = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .get_account(registry_key)
         .await
+        .unwrap()
         .unwrap();
+    let registrar = Registrar::deserialize(&mut &account.data[..]).unwrap();
     expected_registrar.total_sub_created += 1;
     assert_eq!(registrar, expected_registrar);
 
@@ -1676,18 +1708,22 @@ async fn test_state() {
         .await
         .unwrap();
     // Verify state
-    let mint_record = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<MintRecord>(mint_record_key)
+        .get_account(mint_record_key)
         .await
+        .unwrap()
         .unwrap();
+    let mint_record = MintRecord::deserialize(&mut &account.data[..]).unwrap();
     expected_mint_record.count -= 1;
     assert_eq!(mint_record, expected_mint_record);
-    let registrar = prg_test_ctx
+    let account = prg_test_ctx
         .banks_client
-        .get_account_data_with_borsh::<Registrar>(registry_key)
+        .get_account(registry_key)
         .await
+        .unwrap()
         .unwrap();
+    let registrar = Registrar::deserialize(&mut &account.data[..]).unwrap();
     expected_registrar.total_sub_created -= 1;
     assert_eq!(registrar, expected_registrar);
 
