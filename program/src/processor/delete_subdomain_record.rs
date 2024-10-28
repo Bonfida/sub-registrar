@@ -86,6 +86,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
         _ => return Err(SubRegisterError::DataTypeMismatch.into()),
     };
     let mut registrar = Registrar::from_account_info(accounts.registrar, Tag::Registrar)?;
+    check_account_key(accounts.registrar, &sub_record.registrar)?;
 
     // Check PDA derivation
     let (sub_record_key, _) = SubDomainRecord::find_key(accounts.sub_domain.key, program_id);
@@ -110,6 +111,7 @@ pub fn process(program_id: &Pubkey, accounts: &[AccountInfo], _params: Params) -
 
     // Close sub record account
     sub_record.tag = Tag::ClosedSubRecord;
+    sub_record.save(&mut accounts.sub_record.data.borrow_mut());
 
     // Put lamports to 0
     let mut lamports = accounts.sub_record.lamports.borrow_mut();
