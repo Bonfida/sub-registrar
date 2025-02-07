@@ -15,7 +15,8 @@
 
 ## Program ID
 
-Mainnet program ID `2KkyPzjaAYaz2ojQZ9P3xYakLd96B5UH6a2isLaZ4Cgs`
+- Mainnet program ID: `2KkyPzjaAYaz2ojQZ9P3xYakLd96B5UH6a2isLaZ4Cgs`
+- Devnet program ID: `31tT5CmpphAtRL3mstu962zeYH7C6TEkJWLB5nYxciBB`
 
 ## Features
 
