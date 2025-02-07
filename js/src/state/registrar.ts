@@ -87,12 +87,16 @@ export class Registrar {
     return this.deserialize(accountInfo.data);
   }
 
-  static async findForDomain(connection: Connection, domain: PublicKey) {
+  static async findForDomain(
+    connection: Connection,
+    domain: PublicKey,
+    programId = SUB_REGISTER_ID
+  ) {
     const filters: MemcmpFilter[] = [
       { memcmp: { offset: 1 + 1 + 32 + 32 + 32, bytes: domain.toBase58() } },
       { memcmp: { offset: 0, bytes: (Tag.Registrar + 1).toString() } },
     ];
-    const accounts = await connection.getProgramAccounts(SUB_REGISTER_ID, {
+    const accounts = await connection.getProgramAccounts(programId, {
       filters,
     });
     return accounts.map((e) => {
@@ -103,12 +107,16 @@ export class Registrar {
     });
   }
 
-  static async findForOwner(connection: Connection, owner: PublicKey) {
+  static async findForOwner(
+    connection: Connection,
+    owner: PublicKey,
+    programId = SUB_REGISTER_ID
+  ) {
     const filters: MemcmpFilter[] = [
       { memcmp: { offset: 1 + 1, bytes: owner.toBase58() } },
       { memcmp: { offset: 0, bytes: (Tag.Registrar + 1).toString() } },
     ];
-    const accounts = await connection.getProgramAccounts(SUB_REGISTER_ID, {
+    const accounts = await connection.getProgramAccounts(programId, {
       filters,
     });
     return accounts.map((e) => {
@@ -126,11 +134,11 @@ export class Registrar {
     );
   }
 
-  static async findAll(connection: Connection) {
+  static async findAll(connection: Connection, programId = SUB_REGISTER_ID) {
     const filters: MemcmpFilter[] = [
       { memcmp: { offset: 0, bytes: (Tag.Registrar + 1).toString() } },
     ];
-    const accounts = await connection.getProgramAccounts(SUB_REGISTER_ID, {
+    const accounts = await connection.getProgramAccounts(programId, {
       filters,
     });
     return accounts.map((e) => {
