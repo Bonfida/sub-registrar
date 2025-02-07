@@ -8,6 +8,7 @@ edition = "2018"
 [features]
 no-entrypoint = []
 test-bpf = []
+devnet = ["sns-registrar/devnet"]
 
 [dependencies]
 solana-program = "1.18.11"
