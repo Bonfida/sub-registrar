@@ -21,7 +21,11 @@ pub mod utils;
 #[allow(missing_docs)]
 pub mod revoke_unchecked;
 
+#[cfg(not(feature = "devnet"))]
 declare_id_with_central_state!("2KkyPzjaAYaz2ojQZ9P3xYakLd96B5UH6a2isLaZ4Cgs");
+
+#[cfg(feature = "devnet")]
+declare_id_with_central_state!("31tT5CmpphAtRL3mstu962zeYH7C6TEkJWLB5nYxciBB");
 
 #[cfg(not(feature = "no-entrypoint"))]
 solana_security_txt::security_txt! {

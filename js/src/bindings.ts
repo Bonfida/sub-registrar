@@ -48,6 +48,10 @@ export const SUB_REGISTER_ID = new PublicKey(
   "2KkyPzjaAYaz2ojQZ9P3xYakLd96B5UH6a2isLaZ4Cgs"
 );
 
+export const SUB_REGISTER_ID_DEVNET = new PublicKey(
+  "31tT5CmpphAtRL3mstu962zeYH7C6TEkJWLB5nYxciBB"
+);
+
 const FEE_OWNER = new PublicKey("5D2zKog251d6KPCyFyLMt3KroWwXXPWSgTPyhV22K2gR");
 
 /**
@@ -74,7 +78,8 @@ export const createRegistrar = async (
   feeAccount: PublicKey,
   nftGatedCollection: PublicKey | null,
   maxNftMint: number | null,
-  allowRevoke: boolean
+  allowRevoke: boolean,
+  programId = SUB_REGISTER_ID
 ) => {
   const { pubkey } = getDomainKeySync(domain);
   const [registrar] = Registrar.findKey(pubkey, SUB_REGISTER_ID);
@@ -90,7 +95,7 @@ export const createRegistrar = async (
     priceSchedule: Array.from(serializePriceSchedule(schedule)),
     revokeExpiryDelay: BigInt(604800),
   }).getInstruction(
-    SUB_REGISTER_ID,
+    programId,
     SystemProgram.programId,
     registrar,
     pubkey,
@@ -115,11 +120,12 @@ export const closeRegistrar = async (
   registrar: PublicKey,
   authority: PublicKey,
   newDomainOwner: PublicKey,
-  lamportsTarget: PublicKey
+  lamportsTarget: PublicKey,
+  programId = SUB_REGISTER_ID
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
   const ix = new closeRegistrarInstruction().getInstruction(
-    SUB_REGISTER_ID,
+    programId,
     SystemProgram.programId,
     registrar,
     obj.domain,
@@ -149,7 +155,8 @@ export const editRegistrar = async (
   newMint: PublicKey | undefined,
   newFeeAccount: PublicKey | undefined,
   newPriceSchedule: Schedule[] | undefined,
-  newMaxNftMint: number | undefined
+  newMaxNftMint: number | undefined,
+  programId = SUB_REGISTER_ID
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
   const ix = new editRegistrarInstruction({
@@ -161,7 +168,7 @@ export const editRegistrar = async (
       : null,
     newMaxNftMint: newMaxNftMint ? newMaxNftMint : null,
   }).getInstruction(
-    SUB_REGISTER_ID,
+    programId,
     SystemProgram.programId,
     obj.authority,
     registrar
@@ -183,7 +190,8 @@ export const register = async (
   registrar: PublicKey,
   buyer: PublicKey,
   nftAccount: PublicKey,
-  subDomain: string
+  subDomain: string,
+  programId = SUB_REGISTER_ID
 ) => {
   const ixs: TransactionInstruction[] = [];
   const obj = await Registrar.retrieve(connection, registrar);
@@ -201,10 +209,10 @@ export const register = async (
     }
     const des = AccountLayout.decode(nftInfo.data);
     nftMetadata = getMetadataKeyFromMint(des.mint);
-    nftMintRecord = MintRecord.findKey(registrar, des.mint, SUB_REGISTER_ID)[0];
+    nftMintRecord = MintRecord.findKey(registrar, des.mint, programId)[0];
   }
 
-  const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
+  const [subRecord] = SubRecord.findKey(pubkey, programId);
 
   const feeSource = getAssociatedTokenAddressSync(obj.mint, buyer, true);
   const bonfidaFee = getAssociatedTokenAddressSync(obj.mint, FEE_OWNER, true);
@@ -222,7 +230,7 @@ export const register = async (
   const ix = new registerInstruction({
     domain: `\0`.concat(subDomain),
   }).getInstruction(
-    SUB_REGISTER_ID,
+    programId,
     SystemProgram.programId,
     TOKEN_PROGRAM_ID,
     NAME_PROGRAM_ID,
@@ -261,10 +269,11 @@ export const deleteSubrecord = async (
   connection: Connection,
   registrar: PublicKey,
   subDomain: PublicKey,
-  lamportsTarget: PublicKey
+  lamportsTarget: PublicKey,
+  programId = SUB_REGISTER_ID
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
-  const [subRecord] = SubRecord.findKey(subDomain, SUB_REGISTER_ID);
+  const [subRecord] = SubRecord.findKey(subDomain, programId);
 
   let mintRecord: PublicKey | undefined = undefined;
   if (obj.nftGatedCollection) {
@@ -273,7 +282,7 @@ export const deleteSubrecord = async (
   }
 
   const ix = new deleteSubdomainRecordInstruction().getInstruction(
-    SUB_REGISTER_ID,
+    programId,
     registrar,
     subDomain,
     subRecord,
@@ -296,12 +305,13 @@ export const unregister = async (
   connection: Connection,
   registrar: PublicKey,
   subDomain: string,
-  owner: PublicKey
+  owner: PublicKey,
+  programId = SUB_REGISTER_ID
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
   const parent = await reverseLookup(connection, obj.domain);
   const { pubkey } = getDomainKeySync(subDomain + "." + parent);
-  const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
+  const [subRecord] = SubRecord.findKey(pubkey, programId);
 
   let mintRecord: PublicKey | undefined = undefined;
   if (obj.nftGatedCollection) {
@@ -310,7 +320,7 @@ export const unregister = async (
   }
 
   const ix = new unregisterInstruction().getInstruction(
-    SUB_REGISTER_ID,
+    programId,
     SystemProgram.programId,
     NAME_PROGRAM_ID,
     registrar,
@@ -335,18 +345,19 @@ export const adminRegister = async (
   connection: Connection,
   registrar: PublicKey,
   subDomain: string,
-  authority: PublicKey
+  authority: PublicKey,
+  programId = SUB_REGISTER_ID
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
   const parent = await reverseLookup(connection, obj.domain);
   const { pubkey } = getDomainKeySync(subDomain + "." + parent);
   const reverse = getReverseKeySync(subDomain + "." + parent, true);
-  const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
+  const [subRecord] = SubRecord.findKey(pubkey, programId);
 
   const ix = new adminRegisterInstruction({
     domain: `\0`.concat(subDomain),
   }).getInstruction(
-    SUB_REGISTER_ID,
+    programId,
     SystemProgram.programId,
     TOKEN_PROGRAM_ID,
     NAME_PROGRAM_ID,
@@ -379,10 +390,11 @@ export const nftOwnerRevoke = async (
   registrar: PublicKey,
   subOwner: PublicKey,
   nftOwner: PublicKey,
-  subDomainAccount: PublicKey
+  subDomainAccount: PublicKey,
+  programId = SUB_REGISTER_ID
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
-  const [subRecord] = SubRecord.findKey(subDomainAccount, SUB_REGISTER_ID);
+  const [subRecord] = SubRecord.findKey(subDomainAccount, programId);
   const subRecordObj = await SubRecord.retrieve(connection, subRecord);
 
   if (!subRecordObj.mintRecord) {
@@ -395,7 +407,7 @@ export const nftOwnerRevoke = async (
   );
 
   const ix = new nftOwnerRevokeInstruction().getInstruction(
-    SUB_REGISTER_ID,
+    programId,
     registrar,
     subDomainAccount,
     subRecord,
@@ -426,12 +438,13 @@ export const adminRevoke = async (
   registrar: PublicKey,
   subDomain: string,
   owner: PublicKey,
-  authority: PublicKey
+  authority: PublicKey,
+  programId = SUB_REGISTER_ID
 ) => {
   const obj = await Registrar.retrieve(connection, registrar);
   const parent = await reverseLookup(connection, obj.domain);
   const { pubkey } = getDomainKeySync(subDomain + "." + parent);
-  const [subRecord] = SubRecord.findKey(pubkey, SUB_REGISTER_ID);
+  const [subRecord] = SubRecord.findKey(pubkey, programId);
 
   let mintRecord: PublicKey | undefined = undefined;
   if (obj.nftGatedCollection) {
@@ -439,7 +452,7 @@ export const adminRevoke = async (
     mintRecord = obj.mintRecord;
   }
   const ix = new adminRevokeInstruction().getInstruction(
-    SUB_REGISTER_ID,
+    programId,
     registrar,
     pubkey,
     subRecord,
